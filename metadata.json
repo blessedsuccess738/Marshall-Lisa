@@ -1,0 +1,7 @@
+{
+  "name": "EarnLink Rewards Platform",
+  "description": "A high-end multi-level rewards platform with membership tiers, daily earnings, referral systems, and AI-powered marketing tool creation using Gemini.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
