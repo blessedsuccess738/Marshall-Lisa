@@ -33,7 +33,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout, onUpdateU
       return;
     }
 
-    // Check limits
     if (type === 'songs' && user.dailyEarnings.songs >= pkg.songLimit) {
       alert(`Daily limit of ${pkg.songLimit} songs reached for your tier!`);
       return;
@@ -68,12 +67,24 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout, onUpdateU
     alert(`Success! ${formatVal(amount)} credited.`);
   };
 
-  const SONGS = Array.from({ length: 50 }, (_, i) => ({
-    id: i + 1,
-    title: `Premium Track #${i + 1}`,
-    artist: `Artist ${Math.floor(i / 5) + 1}`,
-    duration: '03:45'
-  }));
+  const ARTISTS = [
+    { name: 'Burna Boy', songs: ['City Boys', 'Last Last', 'Tested, Approved', 'It\'s Plenty', 'Giza'] },
+    { name: 'Fola', songs: ['Alone', 'Better Days', 'Focus', 'Vibe', 'Tonight'] },
+    { name: 'Lil Uzi Vert', songs: ['Just Wanna Rock', 'XO Tour Llif3', 'Money Longer', '20 Min', 'P2'] },
+    { name: 'Juice WRLD', songs: ['Lucid Dreams', 'All Girls Are Same', 'Robbery', 'Wishing Well', 'Legends'] },
+    { name: 'Lil Tecca', songs: ['Ransom', '500lbs', 'Lot of Me', 'Never Left', 'Diva'] }
+  ];
+
+  const SONGS = Array.from({ length: 50 }, (_, i) => {
+    const artistIdx = Math.floor(i / 10) % ARTISTS.length;
+    const songIdx = i % 5;
+    return {
+      id: i + 1,
+      title: ARTISTS[artistIdx].songs[songIdx] || `Premium Track #${i + 1}`,
+      artist: ARTISTS[artistIdx].name,
+      duration: '03:45'
+    };
+  });
 
   const VIDEOS = Array.from({ length: 50 }, (_, i) => ({
     id: i + 1,
@@ -84,6 +95,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout, onUpdateU
   const navItems = [
     { label: 'Overview', path: '/dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
     { label: 'Activation', path: '/dashboard/wallet', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
+    { label: 'Withdraw', path: '/dashboard/withdraw', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { label: 'My Team', path: '/dashboard/team', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
     { label: 'Settings', path: '/dashboard/settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
   ];
@@ -118,7 +130,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout, onUpdateU
 
       {/* Main Content Area */}
       <div className="flex-1 p-4 md:p-10 lg:p-14 overflow-y-auto no-scrollbar bg-[#0b1222]">
-        {/* Header Bar */}
         <div className="flex justify-between items-center mb-10">
            <div className="flex items-center gap-4">
               <img src={user.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`} className="h-14 w-14 rounded-2xl bg-slate-800 border-2 border-blue-600/20" alt="avatar" />
@@ -138,12 +149,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout, onUpdateU
 
         {isHome ? (
           <div className="max-w-6xl mx-auto space-y-10">
-            {/* Wallet Quickview */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="glass-card p-10 rounded-[3rem] bg-gradient-to-br from-blue-600/10 to-transparent border border-blue-500/10">
                   <p className="text-slate-500 text-[10px] font-black uppercase mb-2 tracking-widest">Available Balance</p>
                   <p className="text-5xl font-black text-white mb-6">{formatVal(user.balance)}</p>
-                  <Link to="/dashboard/wallet" className="inline-block px-8 py-3 bg-blue-600 rounded-2xl font-black text-sm text-white hover:bg-blue-500 transition">Activation Hub</Link>
+                  <div className="flex gap-4">
+                    <Link to="/dashboard/wallet" className="px-8 py-3 bg-blue-600 rounded-2xl font-black text-sm text-white hover:bg-blue-500 transition">Activation Hub</Link>
+                    <Link to="/dashboard/withdraw" className="px-8 py-3 bg-slate-800 rounded-2xl font-black text-sm text-white hover:bg-slate-700 transition">Withdraw</Link>
+                  </div>
                </div>
                <div className="glass-card p-10 rounded-[3rem] border border-slate-800 flex flex-col justify-center">
                   <p className="text-slate-500 text-[10px] font-black uppercase mb-1 tracking-widest">Daily Limit Status</p>
@@ -156,17 +169,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout, onUpdateU
                </div>
             </div>
 
-            {/* Tabs */}
             <div className="flex space-x-2 border-b border-slate-800 pb-2">
                {['HOME', 'QUIZ', 'MUSIC', 'MOVIES'].map(t => (
                  <button key={t} onClick={() => setActiveTab(t as any)} className={`px-6 py-2 text-xs font-black transition ${activeTab === t ? 'text-blue-500 border-b-2 border-blue-500' : 'text-slate-500'}`}>{t}</button>
                ))}
             </div>
 
-            {/* Tab Contents */}
             {activeTab === 'HOME' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                 {/* Mining */}
                  <div className="glass-card p-10 rounded-[3rem] border border-slate-800 relative overflow-hidden group">
                     <h3 className="text-2xl font-black mb-3">Core Node Miner</h3>
                     <p className="text-slate-500 text-sm mb-10">Run the RoyalGate sequence to extract daily blocks.</p>
@@ -245,7 +255,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout, onUpdateU
                     {SONGS.map(song => (
                       <div key={song.id} className="p-5 glass-card rounded-2xl border border-slate-800 flex justify-between items-center group">
                          <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 bg-slate-800 rounded-xl flex items-center justify-center text-emerald-500 font-black group-hover:bg-emerald-500 group-hover:text-white transition cursor-pointer" onClick={() => handleEarning(pkg.songRate, 'songs', `Streamed ${song.title}`)}>
+                            <div className="h-12 w-12 bg-slate-800 rounded-xl flex items-center justify-center text-emerald-500 font-black group-hover:bg-emerald-500 group-hover:text-white transition cursor-pointer" onClick={() => handleEarning(pkg.songRate, 'songs', `Streamed ${song.title} by ${song.artist}`)}>
                                ▶
                             </div>
                             <div>
@@ -288,7 +298,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout, onUpdateU
         ) : <Outlet />}
       </div>
 
-      {/* Upgrade Modal */}
       {showUpgradeModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-2xl animate-in fade-in duration-300">
            <div className="glass-card w-full max-w-xl p-10 rounded-[3.5rem] border border-blue-500/20 text-center relative">

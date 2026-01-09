@@ -11,6 +11,7 @@ import PromoToolPage from './pages/PromoToolPage';
 import WalletPage from './pages/WalletPage';
 import SettingsPage from './pages/SettingsPage';
 import TeamPage from './pages/TeamPage';
+import WithdrawalPage from './pages/WithdrawalPage';
 import { User, MembershipTier } from './types';
 
 const App: React.FC = () => {
@@ -53,6 +54,7 @@ const App: React.FC = () => {
         
         <Route path="/dashboard" element={currentUser ? <DashboardPage user={currentUser} onLogout={logout} onUpdateUser={login} /> : <Navigate to="/login" />}>
           <Route path="wallet" element={<WalletPage user={currentUser} onUpdateUser={login} />} />
+          <Route path="withdraw" element={<WithdrawalPage user={currentUser} onUpdateUser={login} />} />
           <Route path="team" element={<TeamPage user={currentUser} />} />
           <Route path="settings" element={<SettingsPage user={currentUser} onUpdateUser={login} />} />
           <Route path="promo" element={<PromoToolPage user={currentUser} />} />

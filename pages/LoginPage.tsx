@@ -17,7 +17,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     e.preventDefault();
 
     if (email === ADMIN_EMAIL) {
-      // Fix: Added missing referralBalance, transactions, and dailyEarnings properties to satisfy User interface
       const adminUser: User = {
         id: 'admin-1',
         fullName: 'Super Admin',
@@ -45,8 +44,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       return;
     }
 
-    // Mock Login for existing users
-    // Fix: Added missing referralBalance, transactions, and dailyEarnings properties to satisfy User interface
     const mockUser: User = {
       id: 'user-123',
       fullName: 'John Doe',
@@ -74,47 +71,51 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Welcome back</h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Don't have an account? <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">Sign up</Link>
-        </p>
+    <div className="min-h-screen bg-[#0f172a] flex flex-col justify-center py-12 px-6">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-10">
+        <h2 className="text-4xl font-black text-white tracking-tight">Welcome Back</h2>
+        <p className="mt-3 text-slate-400 font-medium italic">Continue your royal earning journey</p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl sm:rounded-2xl sm:px-10 border border-gray-100">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="glass-card py-10 px-8 rounded-[2.5rem] border border-slate-800 shadow-2xl">
           <form className="space-y-6" onSubmit={handleLogin}>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email address</label>
+              <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-widest">Email Address</label>
               <input
                 required
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                placeholder="example@mail.com"
+                className="w-full px-5 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-200 focus:ring-1 focus:ring-blue-500 outline-none transition"
               />
-              <p className="text-[10px] text-gray-400 mt-1">Tip: Use {ADMIN_EMAIL} for Admin Panel access</p>
+              <p className="text-[10px] text-slate-600 mt-2 italic">Admin: {ADMIN_EMAIL}</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-widest">Password</label>
               <input
                 required
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                placeholder="••••••••"
+                className="w-full px-5 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-200 focus:ring-1 focus:ring-blue-500 outline-none transition"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition"
+              className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl transition transform active:scale-[0.98] shadow-xl shadow-blue-500/10 text-lg"
             >
               Sign In
             </button>
           </form>
+          
+          <p className="mt-10 text-center text-sm text-slate-500">
+            Don't have an account? <Link to="/register" className="text-blue-500 font-bold hover:underline">Register</Link>
+          </p>
         </div>
       </div>
     </div>
