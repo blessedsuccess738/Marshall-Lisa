@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, MembershipTier } from '../types';
+import { User, MembershipTier, Transaction } from '../types';
 import { PACKAGES } from '../constants';
 
 interface OnboardingPageProps {
@@ -16,88 +16,87 @@ const OnboardingPage: React.FC<OnboardingPageProps> = ({ user, onUpdateUser }) =
 
   const tiers = [MembershipTier.LEGACY, MembershipTier.KING, MembershipTier.EMPEROR];
 
-  const handleUpgrade = (tier: MembershipTier) => {
-    setSelectedTier(tier);
-  };
-
-  const handlePayment = () => {
-    if (!selectedTier) return;
+  const handlePayment = (tier: MembershipTier) => {
     setProcessing(true);
+    setSelectedTier(tier);
     
-    // Simulate payment gateway delay
     setTimeout(() => {
-      const pkg = PACKAGES[selectedTier];
+      const pkg = PACKAGES[tier];
+      const newTx: Transaction = {
+        id: Math.random().toString(36).substr(2, 9),
+        amount: pkg.price,
+        type: 'DEBIT',
+        description: `Account Activation (${pkg.name})`,
+        timestamp: new Date().toISOString(),
+        status: 'SUCCESS'
+      };
+      const welcomeBonus: Transaction = {
+        id: Math.random().toString(36).substr(2, 9),
+        amount: pkg.bonus,
+        type: 'CREDIT',
+        description: `Welcome Bonus (${pkg.name})`,
+        timestamp: new Date().toISOString(),
+        status: 'SUCCESS'
+      };
+
       const updatedUser: User = {
         ...user,
-        tier: selectedTier,
+        tier: tier,
         balance: user.balance + pkg.bonus,
-        isActive: true
+        isActive: true,
+        transactions: [welcomeBonus, newTx, ...user.transactions]
       };
       onUpdateUser(updatedUser);
       setProcessing(false);
       navigate('/dashboard');
-    }, 2000);
+    }, 2500);
   };
 
-  if (selectedTier) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-        <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center">
-          <h2 className="text-2xl font-bold mb-4">Complete Your Payment</h2>
-          <p className="text-gray-500 mb-6">Upgrade to <strong>{PACKAGES[selectedTier].name}</strong></p>
-          <div className="bg-gray-100 p-6 rounded-2xl mb-8">
-            <div className="flex justify-between mb-2">
-              <span>Plan Price</span>
-              <span className="font-bold">₦{PACKAGES[selectedTier].price.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between text-green-600">
-              <span>Instant Bonus</span>
-              <span className="font-bold">+₦{PACKAGES[selectedTier].bonus.toLocaleString()}</span>
-            </div>
-          </div>
-          
-          <button 
-            disabled={processing}
-            onClick={handlePayment}
-            className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            {processing ? 'Processing Payment...' : 'Pay with Flutterwave'}
-          </button>
-          <button onClick={() => setSelectedTier(null)} className="mt-4 text-sm text-gray-500">Back to Plans</button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 py-16 px-6">
-      <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-black text-gray-900 mb-2">Final Step: Select Your Earning Plan</h1>
-          <p className="text-gray-500">You must select a plan to activate your dashboard and start earning.</p>
+    <div className="min-h-screen bg-[#0f172a] py-16 px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-16 space-y-4">
+          <h1 className="text-5xl font-black text-white">Activate Your <span className="text-gradient">Empire</span></h1>
+          <p className="text-slate-400 max-w-xl mx-auto text-lg font-medium">Select a tier to unlock cloud mining, high-paying tasks, and your instant sign-up bonus.</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {tiers.map(tier => (
-            <div key={tier} className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 flex flex-col">
-              <h3 className="text-xl font-bold text-gray-900 mb-1">{PACKAGES[tier].name}</h3>
-              <div className="text-3xl font-black text-blue-600 mb-6">₦{PACKAGES[tier].price.toLocaleString()}</div>
-              <ul className="space-y-3 mb-8 flex-1">
-                {PACKAGES[tier].benefits.map((benefit, i) => (
-                  <li key={i} className="flex items-center text-sm text-gray-600">
-                    <svg className="h-4 w-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                    {benefit}
-                  </li>
-                ))}
-              </ul>
-              <button 
-                onClick={() => handleUpgrade(tier)}
-                className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition"
-              >
-                Choose {PACKAGES[tier].name}
-              </button>
-            </div>
-          ))}
+          {tiers.map(tier => {
+            const pkg = PACKAGES[tier];
+            return (
+              <div key={tier} className={`glass-card p-10 rounded-[3rem] border transition-all flex flex-col relative overflow-hidden group ${selectedTier === tier ? 'border-blue-500 bg-blue-500/5' : 'border-slate-800 hover:border-slate-700'}`}>
+                {tier === MembershipTier.EMPEROR && (
+                  <div className="absolute top-8 -right-8 bg-blue-600 text-white px-10 py-1 rotate-45 text-[10px] font-black uppercase tracking-widest shadow-lg">Popular</div>
+                )}
+                
+                <h3 className="text-xl font-bold text-slate-300 mb-2">{pkg.name}</h3>
+                <div className="text-5xl font-black text-white mb-8">₦{pkg.price.toLocaleString()}</div>
+                
+                <div className="space-y-5 mb-10 flex-1">
+                  {pkg.benefits.map((benefit, i) => (
+                    <div key={i} className="flex items-center text-slate-400 text-sm font-medium">
+                      <svg className="h-4 w-4 text-blue-500 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                      {benefit}
+                    </div>
+                  ))}
+                </div>
+
+                <button 
+                  onClick={() => handlePayment(tier)}
+                  disabled={processing}
+                  className={`w-full py-4 rounded-2xl font-black text-lg transition shadow-xl group-hover:scale-[1.02] ${
+                    selectedTier === tier && processing ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-white text-slate-900 hover:bg-blue-50'
+                  }`}
+                >
+                  {selectedTier === tier && processing ? 'Processing...' : `Get Started`}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-12 text-center">
+           <button onClick={() => navigate('/dashboard')} className="text-slate-500 font-bold hover:text-slate-300 transition underline underline-offset-4">Explore Dashboard First</button>
         </div>
       </div>
     </div>

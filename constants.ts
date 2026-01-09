@@ -2,16 +2,26 @@
 import { MembershipTier, Package } from './types';
 
 export const ADMIN_EMAIL = 'blessedsuccess738@gmail.com';
+export const NGN_TO_USD = 1600;
 
 export const PACKAGES: Record<MembershipTier, Package> = {
   [MembershipTier.NONE]: {
     id: MembershipTier.NONE,
-    name: 'Free',
+    name: 'Inactive',
     price: 0,
     bonus: 0,
     dailyRate: 0,
     videoRate: 0,
-    benefits: ['Limited Access']
+    benefits: ['No Access']
+  },
+  [MembershipTier.PINCK]: {
+    id: MembershipTier.PINCK,
+    name: 'Pinck (Free)',
+    price: 0,
+    bonus: 0,
+    dailyRate: 50,
+    videoRate: 5,
+    benefits: ['Daily Mining: ₦50', 'Limited Tasks', '1-Level Referrals']
   },
   [MembershipTier.LEGACY]: {
     id: MembershipTier.LEGACY,
@@ -42,4 +52,4 @@ export const PACKAGES: Record<MembershipTier, Package> = {
   }
 };
 
-export const REFERRAL_RATES = [0.10, 0.05, 0.02]; // 10%, 5%, 2%
+export const REFERRAL_RATES = [0.10, 0.05, 0.02];

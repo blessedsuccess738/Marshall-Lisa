@@ -1,10 +1,13 @@
 
 export enum MembershipTier {
   NONE = 'NONE',
+  PINCK = 'PINCK', // Free starter
   LEGACY = 'LEGACY',
   KING = 'KING',
   EMPEROR = 'EMPEROR'
 }
+
+export type Currency = 'NGN' | 'USD';
 
 export interface Package {
   id: MembershipTier;
@@ -16,6 +19,15 @@ export interface Package {
   benefits: string[];
 }
 
+export interface Transaction {
+  id: string;
+  amount: number;
+  type: 'CREDIT' | 'DEBIT';
+  description: string;
+  timestamp: string;
+  status: 'SUCCESS' | 'PENDING' | 'FAILED';
+}
+
 export interface User {
   id: string;
   fullName: string;
@@ -25,21 +37,13 @@ export interface User {
   country: string;
   tier: MembershipTier;
   balance: number;
-  referrals: string[]; // IDs of users referred
+  referralBalance: number;
+  referrals: string[];
   referredBy?: string;
   isActive: boolean;
   isAdmin: boolean;
   createdAt: string;
-  lastMiningAt?: string;
-}
-
-export interface Transaction {
-  id: string;
-  userId: string;
-  amount: number;
-  type: 'CREDIT' | 'DEBIT';
-  description: string;
-  timestamp: string;
+  transactions: Transaction[];
 }
 
 export interface WithdrawalRequest {

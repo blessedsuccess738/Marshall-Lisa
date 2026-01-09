@@ -17,6 +17,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     e.preventDefault();
 
     if (email === ADMIN_EMAIL) {
+      // Fix: Added missing referralBalance and transactions properties to satisfy User interface
       const adminUser: User = {
         id: 'admin-1',
         fullName: 'Super Admin',
@@ -26,10 +27,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         country: 'System',
         tier: MembershipTier.EMPEROR,
         balance: 9999999,
+        referralBalance: 0,
         referrals: [],
         isActive: true,
         isAdmin: true,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        transactions: []
       };
       onLogin(adminUser);
       navigate('/admin');
@@ -37,6 +40,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
 
     // Mock Login for existing users
+    // Fix: Added missing referralBalance and transactions properties to satisfy User interface
     const mockUser: User = {
       id: 'user-123',
       fullName: 'John Doe',
@@ -46,10 +50,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       country: 'Nigeria',
       tier: MembershipTier.KING,
       balance: 5400,
+      referralBalance: 0,
       referrals: ['ref1', 'ref2'],
       isActive: true,
       isAdmin: false,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      transactions: []
     };
     onLogin(mockUser);
     navigate('/dashboard');
