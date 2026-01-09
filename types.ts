@@ -61,8 +61,15 @@ export interface WithdrawalRequest {
   userId: string;
   username: string;
   amount: number;
-  method: string;
-  accountDetails: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   timestamp: string;
+}
+
+export interface SystemSettings {
+  withdrawalOpen: boolean;
+  withdrawalMessage: string;
+  announcement: string;
 }

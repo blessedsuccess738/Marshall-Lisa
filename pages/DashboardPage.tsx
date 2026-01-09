@@ -1,16 +1,17 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { User, MembershipTier, Transaction, Currency } from '../types';
+import { User, MembershipTier, Transaction, Currency, SystemSettings } from '../types';
 import { PACKAGES, NGN_TO_USD } from '../constants';
 
 interface DashboardPageProps {
   user: User;
+  settings: SystemSettings;
   onLogout: () => void;
   onUpdateUser: (user: User) => void;
 }
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout, onUpdateUser }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ user, settings, onLogout, onUpdateUser }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [currency, setCurrency] = useState<Currency>('NGN');
@@ -114,6 +115,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout, onUpdateU
               <span className="hidden md:inline">{item.label}</span>
             </Link>
           ))}
+          {user.isAdmin && (
+            <Link to="/admin" className="flex items-center px-4 py-3 rounded-2xl transition-all font-bold text-sm bg-purple-600/20 text-purple-400 hover:bg-purple-600 hover:text-white shrink-0 md:w-full">
+              <svg className="h-5 w-5 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              <span className="hidden md:inline">Admin Panel</span>
+            </Link>
+          )}
         </nav>
         
         <div className="mt-auto hidden md:block pt-6 border-t border-slate-800">
@@ -130,6 +137,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout, onUpdateU
 
       {/* Main Content Area */}
       <div className="flex-1 p-4 md:p-10 lg:p-14 overflow-y-auto no-scrollbar bg-[#0b1222]">
+        {/* Global Announcement */}
+        {settings.announcement && (
+          <div className="mb-8 p-4 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex items-center gap-4">
+             <span className="text-xl">📢</span>
+             <p className="text-sm font-medium text-blue-400">{settings.announcement}</p>
+          </div>
+        )}
+
         <div className="flex justify-between items-center mb-10">
            <div className="flex items-center gap-4">
               <img src={user.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`} className="h-14 w-14 rounded-2xl bg-slate-800 border-2 border-blue-600/20" alt="avatar" />
@@ -149,6 +164,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout, onUpdateU
 
         {isHome ? (
           <div className="max-w-6xl mx-auto space-y-10">
+            {/* ... stats grid ... */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="glass-card p-10 rounded-[3rem] bg-gradient-to-br from-blue-600/10 to-transparent border border-blue-500/10">
                   <p className="text-slate-500 text-[10px] font-black uppercase mb-2 tracking-widest">Available Balance</p>

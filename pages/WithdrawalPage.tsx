@@ -1,13 +1,15 @@
 
 import React, { useState } from 'react';
-import { User, Transaction } from '../types';
+import { User, Transaction, SystemSettings, WithdrawalRequest } from '../types';
 
 interface WithdrawalPageProps {
   user: User;
+  settings: SystemSettings;
   onUpdateUser: (user: User) => void;
+  onAddWithdrawal: (req: WithdrawalRequest) => void;
 }
 
-const WithdrawalPage: React.FC<WithdrawalPageProps> = ({ user, onUpdateUser }) => {
+const WithdrawalPage: React.FC<WithdrawalPageProps> = ({ user, settings, onUpdateUser, onAddWithdrawal }) => {
   const [formData, setFormData] = useState({
     amount: '',
     accountNumber: '',
@@ -22,6 +24,11 @@ const WithdrawalPage: React.FC<WithdrawalPageProps> = ({ user, onUpdateUser }) =
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!settings.withdrawalOpen) {
+      alert("Withdrawal portal is currently closed. Please check back later.");
+      return;
+    }
+
     const amountNum = parseFloat(formData.amount);
 
     if (amountNum < 2000) {
@@ -36,8 +43,22 @@ const WithdrawalPage: React.FC<WithdrawalPageProps> = ({ user, onUpdateUser }) =
 
     setProcessing(true);
     setTimeout(() => {
+      const withdrawalId = Math.random().toString(36).substr(2, 9);
+      
+      const newWithdrawal: WithdrawalRequest = {
+        id: withdrawalId,
+        userId: user.id,
+        username: user.username,
+        amount: amountNum,
+        bankName: formData.bankName,
+        accountNumber: formData.accountNumber,
+        accountName: formData.accountName,
+        status: 'PENDING',
+        timestamp: new Date().toISOString()
+      };
+
       const newTx: Transaction = {
-        id: Math.random().toString(36).substr(2, 9),
+        id: withdrawalId,
         amount: amountNum,
         type: 'DEBIT',
         description: `Withdrawal to ${formData.bankName} (${formData.accountNumber})`,
@@ -45,6 +66,7 @@ const WithdrawalPage: React.FC<WithdrawalPageProps> = ({ user, onUpdateUser }) =
         status: 'PENDING'
       };
 
+      onAddWithdrawal(newWithdrawal);
       onUpdateUser({
         ...user,
         balance: user.balance - amountNum,
@@ -70,8 +92,18 @@ const WithdrawalPage: React.FC<WithdrawalPageProps> = ({ user, onUpdateUser }) =
          </div>
       </div>
 
+      {!settings.withdrawalOpen && (
+        <div className="p-8 bg-red-600/10 border border-red-500/20 rounded-[2.5rem] flex flex-col md:flex-row items-center gap-6">
+           <div className="text-4xl">🚧</div>
+           <div>
+              <h3 className="text-xl font-black text-white mb-1">Withdrawal Portal Closed</h3>
+              <p className="text-slate-400 text-sm font-medium">{settings.withdrawalMessage}</p>
+           </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 glass-card p-10 rounded-[3rem] border border-slate-800">
+        <div className={`lg:col-span-2 glass-card p-10 rounded-[3rem] border border-slate-800 transition-opacity ${!settings.withdrawalOpen ? 'opacity-50 pointer-events-none' : ''}`}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-[10px] font-black text-slate-500 uppercase mb-3 ml-1 tracking-widest">Amount (₦)</label>
@@ -124,7 +156,7 @@ const WithdrawalPage: React.FC<WithdrawalPageProps> = ({ user, onUpdateUser }) =
             </div>
 
             <button 
-              disabled={processing || !formData.amount}
+              disabled={processing || !formData.amount || !settings.withdrawalOpen}
               type="submit" 
               className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-[2rem] font-black text-lg transition shadow-xl shadow-blue-500/10 active:scale-95 transform"
             >
@@ -137,18 +169,20 @@ const WithdrawalPage: React.FC<WithdrawalPageProps> = ({ user, onUpdateUser }) =
           <div className="glass-card p-8 rounded-[2.5rem] border border-emerald-500/10 bg-emerald-500/5">
             <h3 className="text-sm font-black text-emerald-500 mb-4 uppercase tracking-widest">Payout Status</h3>
             <p className="text-slate-400 text-sm leading-relaxed mb-6">
-              Requests are usually audited and paid within <span className="text-white font-bold">15 minutes</span>.
+              {settings.withdrawalOpen ? "System is active. Requests are usually audited and paid within 15 minutes." : settings.withdrawalMessage}
             </p>
             <div className="flex items-center gap-3">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              <span className="text-[10px] font-black text-emerald-500 uppercase">System Active</span>
+              <div className={`h-2 w-2 rounded-full animate-pulse ${settings.withdrawalOpen ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+              <span className={`text-[10px] font-black uppercase ${settings.withdrawalOpen ? 'text-emerald-500' : 'text-red-500'}`}>
+                {settings.withdrawalOpen ? 'System Active' : 'Portal Closed'}
+              </span>
             </div>
           </div>
           
           <div className="glass-card p-8 rounded-[2.5rem] border border-slate-800">
             <h3 className="text-sm font-black text-white mb-4 uppercase tracking-widest">Notice</h3>
             <p className="text-slate-500 text-xs italic">
-              Ensure account details match your registered name to avoid verification delays.
+              Ensure account details match your registered name to avoid verification delays. Use our Telegram support if you have issues.
             </p>
           </div>
         </div>
