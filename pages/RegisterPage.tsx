@@ -18,8 +18,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onLogin }) => {
     email: '',
     phone: '',
     password: '',
-    ref: referralCode,
-    username: '' // derived or extra
+    ref: referralCode
   });
 
   const [error, setError] = useState('');
@@ -29,18 +28,18 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onLogin }) => {
     setError('');
 
     if (formData.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-      setError('This email is reserved.');
+      setError('System restricted email.');
       return;
     }
 
     const newUser: User = {
       id: Math.random().toString(36).substr(2, 9),
       fullName: formData.fullName,
-      username: formData.email.split('@')[0] + Math.floor(Math.random() * 100),
+      username: formData.email.split('@')[0],
       email: formData.email,
       phone: formData.phone,
       country: 'Nigeria',
-      tier: MembershipTier.PINCK, // Default to free Pinck tier
+      tier: MembershipTier.PINCK,
       balance: 0,
       referralBalance: 0,
       referrals: [],
@@ -48,18 +47,24 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onLogin }) => {
       isActive: true,
       isAdmin: false,
       createdAt: new Date().toISOString(),
-      transactions: []
+      transactions: [],
+      dailyEarnings: {
+        quiz: 0,
+        songs: 0,
+        videos: 0,
+        lastReset: new Date().toISOString()
+      }
     };
 
     onLogin(newUser);
-    navigate('/dashboard'); // Go directly to dashboard
+    navigate('/dashboard'); 
   };
 
   return (
-    <div className="min-h-screen bg-[#0f172a] flex flex-col justify-center py-12 px-6">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-8">
-        <h2 className="text-4xl font-black text-white">Create Account</h2>
-        <p className="mt-2 text-slate-400 font-medium italic">Join the Elite Rewards Circle</p>
+    <div className="min-h-screen bg-[#0f172a] flex flex-col justify-center py-12 px-6 font-sans">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-10">
+        <h2 className="text-4xl font-black text-white tracking-tight">RoyalGate</h2>
+        <p className="mt-3 text-slate-400 font-medium italic">Your gateway to premium digital rewards</p>
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -69,38 +74,38 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onLogin }) => {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase mb-1 ml-1">Full Name</label>
-                <input required placeholder="Enter your full name" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} className="w-full px-5 py-3.5 bg-slate-900 border border-slate-800 rounded-2xl text-slate-300 focus:ring-1 focus:ring-blue-500 outline-none transition" />
+                <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-widest">Full Name</label>
+                <input required placeholder="Enter your full name" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} className="w-full px-5 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-200 focus:ring-1 focus:ring-blue-500 outline-none transition" />
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase mb-1 ml-1">Email Address</label>
-                <input required type="email" placeholder="email@example.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-5 py-3.5 bg-slate-900 border border-slate-800 rounded-2xl text-slate-300 focus:ring-1 focus:ring-blue-500 outline-none transition" />
+                <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-widest">Email Address</label>
+                <input required type="email" placeholder="example@mail.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-5 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-200 focus:ring-1 focus:ring-blue-500 outline-none transition" />
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase mb-1 ml-1">Phone Number</label>
-                <input required type="tel" placeholder="0800 000 0000" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full px-5 py-3.5 bg-slate-900 border border-slate-800 rounded-2xl text-slate-300 focus:ring-1 focus:ring-blue-500 outline-none transition" />
+                <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-widest">Phone Number</label>
+                <input required type="tel" placeholder="080... (11 digits)" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full px-5 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-200 focus:ring-1 focus:ring-blue-500 outline-none transition" />
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase mb-1 ml-1">Password</label>
-                <input required type="password" placeholder="••••••••" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full px-5 py-3.5 bg-slate-900 border border-slate-800 rounded-2xl text-slate-300 focus:ring-1 focus:ring-blue-500 outline-none transition" />
+                <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-widest">Password</label>
+                <input required type="password" placeholder="••••••••" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full px-5 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-200 focus:ring-1 focus:ring-blue-500 outline-none transition" />
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase mb-1 ml-1">Referral Code (Optional)</label>
-                <input placeholder="PRO-2025" value={formData.ref} onChange={(e) => setFormData({...formData, ref: e.target.value})} className="w-full px-5 py-3.5 bg-slate-900 border border-slate-800 rounded-2xl text-slate-300 focus:ring-1 focus:ring-blue-500 outline-none transition" />
+                <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-widest">Referral Code (Optional)</label>
+                <input placeholder="Enter code if any" value={formData.ref} onChange={(e) => setFormData({...formData, ref: e.target.value})} className="w-full px-5 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-200 focus:ring-1 focus:ring-blue-500 outline-none transition" />
               </div>
             </div>
 
-            <button type="submit" className="w-full py-4.5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl transition transform active:scale-[0.98] shadow-xl shadow-blue-500/10 text-lg">
-              Sign Up & Access Dashboard
+            <button type="submit" className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl transition transform active:scale-[0.98] shadow-xl shadow-blue-500/10 text-lg mt-4">
+              Create My Account
             </button>
           </form>
           
-          <p className="mt-8 text-center text-sm text-slate-500">
-            Already registered? <Link to="/login" className="text-blue-500 font-bold hover:underline">Log in</Link>
+          <p className="mt-10 text-center text-sm text-slate-500">
+            Already have an account? <Link to="/login" className="text-blue-500 font-bold hover:underline">Log in</Link>
           </p>
         </div>
       </div>

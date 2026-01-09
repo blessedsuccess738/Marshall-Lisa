@@ -12,6 +12,9 @@ export const PACKAGES: Record<MembershipTier, Package> = {
     bonus: 0,
     dailyRate: 0,
     videoRate: 0,
+    songRate: 0,
+    songLimit: 0,
+    videoLimit: 0,
     benefits: ['No Access']
   },
   [MembershipTier.PINCK]: {
@@ -19,9 +22,12 @@ export const PACKAGES: Record<MembershipTier, Package> = {
     name: 'Pinck (Free)',
     price: 0,
     bonus: 0,
-    dailyRate: 50,
-    videoRate: 5,
-    benefits: ['Daily Mining: ₦50', 'Limited Tasks', '1-Level Referrals']
+    dailyRate: 0,
+    videoRate: 0,
+    songRate: 0,
+    songLimit: 0,
+    videoLimit: 0,
+    benefits: ['View Only', 'Upgrade to Earn']
   },
   [MembershipTier.LEGACY]: {
     id: MembershipTier.LEGACY,
@@ -29,8 +35,11 @@ export const PACKAGES: Record<MembershipTier, Package> = {
     price: 5000,
     bonus: 500,
     dailyRate: 200,
-    videoRate: 20,
-    benefits: ['Daily Mining: ₦200', 'Video Ads: ₦20/ea', 'Instant Bonus: ₦500', '1-Level Referrals']
+    videoRate: 50,
+    songRate: 50,
+    songLimit: 5,
+    videoLimit: 5,
+    benefits: ['5 Songs Daily', '5 Videos Daily', 'Mining Active', '₦500 Bonus']
   },
   [MembershipTier.KING]: {
     id: MembershipTier.KING,
@@ -38,8 +47,11 @@ export const PACKAGES: Record<MembershipTier, Package> = {
     price: 15000,
     bonus: 1500,
     dailyRate: 750,
-    videoRate: 50,
-    benefits: ['Daily Mining: ₦750', 'Video Ads: ₦50/ea', 'Instant Bonus: ₦1,500', '2-Level Referrals']
+    videoRate: 100,
+    songRate: 100,
+    songLimit: 12,
+    videoLimit: 12,
+    benefits: ['12 Songs Daily', '12 Videos Daily', 'Enhanced Mining', '₦1,500 Bonus']
   },
   [MembershipTier.EMPEROR]: {
     id: MembershipTier.EMPEROR,
@@ -47,8 +59,11 @@ export const PACKAGES: Record<MembershipTier, Package> = {
     price: 50000,
     bonus: 5000,
     dailyRate: 3000,
-    videoRate: 200,
-    benefits: ['Daily Mining: ₦3,000', 'Video Ads: ₦200/ea', 'Instant Bonus: ₦5,000', 'Multi-Level Referrals', 'Priority Support']
+    videoRate: 250,
+    songRate: 250,
+    songLimit: 30,
+    videoLimit: 30,
+    benefits: ['30 Songs Daily', '30 Videos Daily', 'Max Mining', '₦5,000 Bonus']
   }
 };
 

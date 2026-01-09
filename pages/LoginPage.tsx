@@ -17,7 +17,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     e.preventDefault();
 
     if (email === ADMIN_EMAIL) {
-      // Fix: Added missing referralBalance and transactions properties to satisfy User interface
+      // Fix: Added missing referralBalance, transactions, and dailyEarnings properties to satisfy User interface
       const adminUser: User = {
         id: 'admin-1',
         fullName: 'Super Admin',
@@ -32,7 +32,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         isActive: true,
         isAdmin: true,
         createdAt: new Date().toISOString(),
-        transactions: []
+        transactions: [],
+        dailyEarnings: {
+          quiz: 0,
+          songs: 0,
+          videos: 0,
+          lastReset: new Date().toISOString()
+        }
       };
       onLogin(adminUser);
       navigate('/admin');
@@ -40,7 +46,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
 
     // Mock Login for existing users
-    // Fix: Added missing referralBalance and transactions properties to satisfy User interface
+    // Fix: Added missing referralBalance, transactions, and dailyEarnings properties to satisfy User interface
     const mockUser: User = {
       id: 'user-123',
       fullName: 'John Doe',
@@ -55,7 +61,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       isActive: true,
       isAdmin: false,
       createdAt: new Date().toISOString(),
-      transactions: []
+      transactions: [],
+      dailyEarnings: {
+        quiz: 0,
+        songs: 0,
+        videos: 0,
+        lastReset: new Date().toISOString()
+      }
     };
     onLogin(mockUser);
     navigate('/dashboard');

@@ -8,103 +8,101 @@ const LandingPage: React.FC = () => {
   const tiers = [MembershipTier.LEGACY, MembershipTier.KING, MembershipTier.EMPEROR];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#0f172a] text-slate-200">
       {/* Navbar */}
-      <nav className="fixed top-0 w-full glass z-50 px-6 py-4 flex justify-between items-center">
-        <div className="text-2xl font-extrabold text-blue-600 flex items-center">
-          <span className="bg-blue-600 text-white p-1 rounded-md mr-2">EL</span>
-          EarnLink
+      <nav className="fixed top-0 w-full glass-card z-50 px-6 py-5 flex justify-between items-center border-b border-slate-800">
+        <div className="text-2xl font-black text-blue-500 flex items-center tracking-tighter">
+          <span className="bg-blue-600 text-white p-1.5 rounded-lg mr-2 text-sm italic">RG</span>
+          RoyalGate
         </div>
-        <div className="space-x-4">
-          <Link to="/login" className="text-gray-600 font-medium hover:text-blue-600 transition">Login</Link>
-          <Link to="/register" className="bg-blue-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-700 transition">Sign Up</Link>
+        <div className="flex items-center space-x-6">
+          <Link to="/login" className="text-slate-400 font-bold hover:text-white transition text-sm">Login</Link>
+          <Link to="/register" className="bg-blue-600 text-white px-8 py-2.5 rounded-full font-black text-sm hover:bg-blue-500 transition shadow-lg shadow-blue-500/20">Sign Up</Link>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 px-6 max-w-7xl mx-auto text-center">
-        <h1 className="text-5xl md:text-7xl font-black text-gray-900 mb-6 leading-tight">
-          Turn Your Digital Activity Into <span className="text-blue-600">Daily Income</span>
+      <section className="pt-48 pb-24 px-6 max-w-7xl mx-auto text-center">
+        <div className="inline-block bg-blue-600/10 text-blue-500 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-8 border border-blue-500/10">
+          Digital Reward Ecosystem 2025
+        </div>
+        <h1 className="text-6xl md:text-8xl font-black text-white mb-8 leading-[0.9] tracking-tighter">
+          Earning Made <br /><span className="text-gradient">Royal.</span>
         </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-10">
-          Join 50,000+ members earning passive rewards by watching videos, daily mining, and inviting friends.
+        <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-12 font-medium">
+          Join the elite circle of 50,000+ members who turn their attention into digital assets. Mining, Music, and Movies—all in one hub.
         </p>
-        <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
-          <Link to="/register" className="bg-blue-600 text-white px-10 py-4 rounded-xl text-lg font-bold shadow-lg shadow-blue-200 hover:scale-105 transition-transform w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-6">
+          <Link to="/register" className="bg-white text-slate-900 px-12 py-5 rounded-[2rem] text-lg font-black shadow-2xl hover:scale-105 transition-all w-full sm:w-auto">
             Get Started Now
           </Link>
-          <div className="flex -space-x-3 overflow-hidden p-2">
-            {[1, 2, 3, 4].map(i => (
-              <img key={i} className="inline-block h-10 w-10 rounded-full ring-2 ring-white" src={`https://picsum.photos/100/100?random=${i}`} alt="user" />
-            ))}
-            <div className="flex items-center ml-4 text-sm font-medium text-gray-500">
-              50k+ Active Earners
+          <div className="flex items-center gap-4 bg-slate-800/50 p-2 pr-6 rounded-full border border-slate-700">
+            <div className="flex -space-x-3">
+              {[1, 2, 3].map(i => (
+                <img key={i} className="inline-block h-10 w-10 rounded-full ring-4 ring-slate-900 object-cover" src={`https://picsum.photos/100/100?random=${i + 40}`} alt="user" />
+              ))}
+            </div>
+            <span className="text-xs font-black text-slate-300 uppercase tracking-widest">50k+ Members</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Tiers / Value Props */}
+      <section className="py-24 bg-[#0b1222]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-20 space-y-4">
+             <h2 className="text-4xl font-black text-white tracking-tight">Our Platform Rules</h2>
+             <p className="text-slate-500 font-medium">Built on transparency and consistency.</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="glass-card p-10 rounded-[3rem] border border-slate-800 text-center">
+               <div className="h-16 w-16 bg-blue-600/10 rounded-2xl flex items-center justify-center mx-auto mb-8 text-3xl">🛡️</div>
+               <h3 className="text-xl font-black text-white mb-4 tracking-tight">Zero Multi-Acc</h3>
+               <p className="text-slate-500 text-sm leading-relaxed font-medium">We maintain ecosystem balance by enforcing a strict one-user, one-account policy. Security is our priority.</p>
+            </div>
+            <div className="glass-card p-10 rounded-[3rem] border border-slate-800 text-center">
+               <div className="h-16 w-16 bg-emerald-600/10 rounded-2xl flex items-center justify-center mx-auto mb-8 text-3xl">💰</div>
+               <h3 className="text-xl font-black text-white mb-4 tracking-tight">Rapid Payouts</h3>
+               <p className="text-slate-500 text-sm leading-relaxed font-medium">Reach ₦2,000 and withdraw instantly. No long waiting periods. We process verified requests within 15 minutes.</p>
+            </div>
+            <div className="glass-card p-10 rounded-[3rem] border border-slate-800 text-center">
+               <div className="h-16 w-16 bg-purple-600/10 rounded-2xl flex items-center justify-center mx-auto mb-8 text-3xl">🎮</div>
+               <h3 className="text-xl font-black text-white mb-4 tracking-tight">Gamified Income</h3>
+               <p className="text-slate-500 text-sm leading-relaxed font-medium">Earn through Mining Nodes, Music playlists, and Movie trailers. It's not work—it's a lifestyle.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Tiers */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center mb-16">Choose Your Growth Plan</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {tiers.map(tier => (
-              <div key={tier} className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 flex flex-col relative overflow-hidden">
-                {tier === MembershipTier.EMPEROR && (
-                  <div className="absolute top-0 right-0 bg-blue-600 text-white px-4 py-1 rounded-bl-xl text-xs font-bold uppercase tracking-widest">
-                    Best Value
-                  </div>
-                )}
-                <h3 className="text-2xl font-bold mb-2">{PACKAGES[tier].name}</h3>
-                <div className="text-4xl font-black text-gray-900 mb-6">₦{PACKAGES[tier].price.toLocaleString()}</div>
-                <ul className="space-y-4 mb-8 flex-1">
-                  {PACKAGES[tier].benefits.map((benefit, i) => (
-                    <li key={i} className="flex items-center text-gray-600">
-                      <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                      {benefit}
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/register" className="w-full py-4 rounded-xl font-bold text-center bg-gray-900 text-white hover:bg-black transition">
-                  Select {PACKAGES[tier].name}
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Steps */}
-      <section className="py-20 max-w-7xl mx-auto px-6">
-        <div className="grid md:grid-cols-3 gap-12 text-center">
-          <div>
-            <div className="bg-blue-100 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600 font-bold text-2xl">1</div>
-            <h4 className="text-xl font-bold mb-2">Choose Plan</h4>
-            <p className="text-gray-500">Pick the membership tier that fits your daily earning goals.</p>
-          </div>
-          <div>
-            <div className="bg-blue-100 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600 font-bold text-2xl">2</div>
-            <h4 className="text-xl font-bold mb-2">Complete Tasks</h4>
-            <p className="text-gray-500">Daily mining and video tasks take less than 10 minutes a day.</p>
-          </div>
-          <div>
-            <div className="bg-blue-100 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600 font-bold text-2xl">3</div>
-            <h4 className="text-xl font-bold mb-2">Withdraw</h4>
-            <p className="text-gray-500">Instantly withdraw your earnings to your bank or crypto wallet.</p>
-          </div>
-        </div>
-      </section>
-
       {/* Trust */}
-      <section className="py-20 bg-gray-900 text-white text-center">
-        <h2 className="text-3xl font-bold mb-12">₦500M+ Already Paid Out</h2>
-        <div className="flex flex-wrap justify-center gap-12 opacity-50 grayscale invert">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-8" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Paystack_Logo.png" alt="Paystack" className="h-8" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/3/39/Flutterwave_Logo.png" alt="Flutterwave" className="h-8" />
+      <section className="py-24 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <h2 className="text-2xl font-black text-slate-500 uppercase tracking-[0.2em] mb-12">₦500M+ Already Paid Out</h2>
+          <div className="flex flex-wrap justify-center gap-16 opacity-30 grayscale invert brightness-200">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-8" />
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Paystack_Logo.png" alt="Paystack" className="h-8" />
+            <img src="https://upload.wikimedia.org/wikipedia/commons/3/39/Flutterwave_Logo.png" alt="Flutterwave" className="h-8" />
+          </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="py-12 border-t border-slate-800/50 bg-[#0b1222]">
+         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="text-xl font-black text-blue-500 flex items-center">
+              RG RoyalGate
+            </div>
+            <div className="flex gap-8 text-sm font-bold text-slate-500 uppercase tracking-widest">
+               <a href="#" className="hover:text-white transition">Privacy</a>
+               <a href="#" className="hover:text-white transition">Terms</a>
+               <a href="#" className="hover:text-white transition">Support</a>
+            </div>
+            <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">
+               © 2025 RoyalGate Pro Systems.
+            </p>
+         </div>
+      </footer>
     </div>
   );
 };

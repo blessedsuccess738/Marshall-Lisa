@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { User, Transaction, Currency } from '../types';
-import { NGN_TO_USD } from '../constants';
+import { User, MembershipTier, Transaction } from '../types';
+import { PACKAGES } from '../constants';
 
 interface WalletPageProps {
   user: User;
@@ -9,127 +9,94 @@ interface WalletPageProps {
 }
 
 const WalletPage: React.FC<WalletPageProps> = ({ user, onUpdateUser }) => {
-  const [tab, setTab] = useState<'DEPOSIT' | 'WITHDRAW'>('DEPOSIT');
-  const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState('BANK_TRANSFER');
+  const [selectedTier, setSelectedTier] = useState<MembershipTier | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [dispCurrency] = useState<Currency>('NGN'); // Default to NGN in wallet for clarity
 
-  const format = (v: number) => `₦${v.toLocaleString()}`;
+  const tiers = [MembershipTier.LEGACY, MembershipTier.KING, MembershipTier.EMPEROR];
 
-  const handleDeposit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleActivation = (tier: MembershipTier) => {
     setProcessing(true);
     setTimeout(() => {
-      const val = parseFloat(amount);
-      const newTx: Transaction = {
+      const pkg = PACKAGES[tier];
+      const activationTx: Transaction = {
         id: Math.random().toString(36).substr(2, 9),
-        amount: val,
-        type: 'CREDIT',
-        description: `Deposit via ${method}`,
+        amount: pkg.price,
+        type: 'DEBIT',
+        description: `Account Activation (${pkg.name})`,
         timestamp: new Date().toISOString(),
         status: 'SUCCESS'
       };
-      onUpdateUser({
-        ...user,
-        balance: user.balance + val,
-        transactions: [newTx, ...user.transactions]
-      });
-      setProcessing(false);
-      setAmount('');
-      alert('Deposit successful!');
-    }, 2000);
-  };
-
-  const handleWithdraw = (e: React.FormEvent) => {
-    e.preventDefault();
-    const val = parseFloat(amount);
-    if (val > user.balance) return alert('Insufficient funds');
-    if (val < 2000) return alert('Min withdrawal ₦2,000');
-    setProcessing(true);
-    setTimeout(() => {
-      const newTx: Transaction = {
+      const bonusTx: Transaction = {
         id: Math.random().toString(36).substr(2, 9),
-        amount: val,
-        type: 'DEBIT',
-        description: `Withdrawal Request`,
+        amount: pkg.bonus,
+        type: 'CREDIT',
+        description: `Welcome Bonus (${pkg.name})`,
         timestamp: new Date().toISOString(),
-        status: 'PENDING'
+        status: 'SUCCESS'
       };
+
       onUpdateUser({
         ...user,
-        balance: user.balance - val,
-        transactions: [newTx, ...user.transactions]
+        tier: tier,
+        isActive: true,
+        balance: user.balance + pkg.bonus,
+        transactions: [bonusTx, activationTx, ...user.transactions]
       });
       setProcessing(false);
-      setAmount('');
-      alert('Withdrawal queued for approval');
+      alert(`${pkg.name} Activated Successfully!`);
     }, 2000);
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-         <div>
-            <h2 className="text-4xl font-black text-white">Wallet Hub</h2>
-            <p className="text-slate-500">Manage deposits and withdraw assets.</p>
-         </div>
-         <div className="glass-card px-8 py-4 rounded-3xl border border-blue-500/10">
-            <p className="text-[10px] font-black text-blue-400 uppercase mb-1 tracking-widest">Main Wallet</p>
-            <p className="text-3xl font-black text-white">{format(user.balance)}</p>
-         </div>
+    <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
+      <div className="text-center max-w-2xl mx-auto space-y-4">
+         <h2 className="text-4xl font-black text-white tracking-tight">Activation Hub</h2>
+         <p className="text-slate-500 font-medium">Activate your earning streams by selecting a package below. All packages include a welcome bonus and tiered rewards.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 glass-card p-10 rounded-[3rem] border border-slate-800">
-           <div className="flex bg-slate-900 p-1.5 rounded-2xl mb-10 w-fit">
-              <button onClick={() => setTab('DEPOSIT')} className={`px-8 py-2.5 rounded-xl text-xs font-black transition ${tab === 'DEPOSIT' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>Deposit</button>
-              <button onClick={() => setTab('WITHDRAW')} className={`px-8 py-2.5 rounded-xl text-xs font-black transition ${tab === 'WITHDRAW' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>Withdraw</button>
-           </div>
-
-           <form onSubmit={tab === 'DEPOSIT' ? handleDeposit : handleWithdraw} className="space-y-8">
-              <div>
-                 <label className="block text-[10px] font-black text-slate-500 uppercase mb-3 ml-1 tracking-widest">Amount (₦)</label>
-                 <input required type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="w-full px-8 py-5 bg-slate-900 border border-slate-800 rounded-3xl text-3xl font-black text-white outline-none focus:ring-1 focus:ring-blue-500 transition" />
-              </div>
-
-              <div>
-                 <label className="block text-[10px] font-black text-slate-500 uppercase mb-3 ml-1 tracking-widest">Payout Method</label>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {['BANK_TRANSFER', 'DEBIT_CARD', 'USDT'].map(m => (
-                      <div key={m} onClick={() => setMethod(m)} className={`p-4 rounded-2xl border cursor-pointer transition flex items-center gap-3 ${method === m ? 'border-blue-500 bg-blue-500/5 text-blue-400' : 'border-slate-800 text-slate-500 hover:border-slate-700'}`}>
-                         <div className={`h-2 w-2 rounded-full ${method === m ? 'bg-blue-500' : 'bg-slate-800'}`}></div>
-                         <span className="text-xs font-bold uppercase">{m.replace('_', ' ')}</span>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+         {tiers.map(tier => {
+           const pkg = PACKAGES[tier];
+           const isCurrent = user.tier === tier;
+           return (
+             <div key={tier} className={`glass-card p-10 rounded-[3.5rem] border transition-all relative overflow-hidden flex flex-col ${selectedTier === tier ? 'border-blue-500 bg-blue-600/5' : 'border-slate-800'}`}>
+                {tier === MembershipTier.EMPEROR && (
+                   <div className="absolute top-10 -right-10 bg-blue-600 text-white px-12 py-1 rotate-45 text-[10px] font-black uppercase tracking-widest shadow-lg">Premium</div>
+                )}
+                <h3 className="text-xl font-bold text-slate-300 mb-2">{pkg.name}</h3>
+                <div className="text-4xl font-black text-white mb-10">₦{pkg.price.toLocaleString()}</div>
+                
+                <div className="space-y-4 mb-12 flex-1">
+                   {pkg.benefits.map((b, i) => (
+                      <div key={i} className="flex items-center text-sm font-medium text-slate-400">
+                         <svg className="h-4 w-4 text-emerald-500 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                         {b}
                       </div>
-                    ))}
-                 </div>
-              </div>
+                   ))}
+                </div>
 
-              <button disabled={processing || !amount} type="submit" className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-[2rem] font-black text-lg transition shadow-xl shadow-blue-500/10">
-                 {processing ? 'Processing...' : `Confirm ${tab}`}
-              </button>
-           </form>
-        </div>
+                <button 
+                  disabled={processing || isCurrent}
+                  onClick={() => handleActivation(tier)}
+                  className={`w-full py-4 rounded-2xl font-black text-lg transition shadow-xl ${
+                    isCurrent ? 'bg-emerald-600 text-white cursor-not-allowed' : 'bg-white text-slate-900 hover:bg-blue-50'
+                  }`}
+                >
+                  {isCurrent ? 'Active Plan' : processing ? 'Activating...' : 'Activate Now'}
+                </button>
+             </div>
+           );
+         })}
+      </div>
 
-        <div className="space-y-6">
-           <div className="glass-card p-8 rounded-[2.5rem] border border-slate-800">
-              <h3 className="text-sm font-black text-white mb-6 uppercase tracking-widest">Transfer Limits</h3>
-              <div className="space-y-4">
-                 <div className="flex justify-between text-xs">
-                    <span className="text-slate-500">Min. Deposit</span>
-                    <span className="text-slate-300 font-bold">₦1,000</span>
-                 </div>
-                 <div className="flex justify-between text-xs">
-                    <span className="text-slate-500">Min. Withdrawal</span>
-                    <span className="text-slate-300 font-bold">₦2,000</span>
-                 </div>
-                 <div className="flex justify-between text-xs border-t border-slate-800 pt-4">
-                    <span className="text-slate-500">Network Fee</span>
-                    <span className="text-emerald-400 font-bold">₦0.00</span>
-                 </div>
-              </div>
-           </div>
-        </div>
+      <div className="glass-card p-10 rounded-[3rem] border border-slate-800 bg-slate-900/50">
+         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="text-center md:text-left">
+               <h4 className="text-xl font-black text-white mb-1">Need a custom deposit?</h4>
+               <p className="text-slate-500 text-sm">Contact customer service for manual wallet funding.</p>
+            </div>
+            <button onClick={() => window.open('https://t.me/royalgate_support', '_blank')} className="px-10 py-4 bg-slate-800 text-white font-black rounded-2xl hover:bg-slate-700 transition border border-slate-700">Contact Support</button>
+         </div>
       </div>
     </div>
   );

@@ -16,6 +16,9 @@ export interface Package {
   bonus: number;
   dailyRate: number;
   videoRate: number;
+  songRate: number;
+  songLimit: number;
+  videoLimit: number;
   benefits: string[];
 }
 
@@ -42,8 +45,15 @@ export interface User {
   referredBy?: string;
   isActive: boolean;
   isAdmin: boolean;
+  avatarUrl?: string;
   createdAt: string;
   transactions: Transaction[];
+  dailyEarnings: {
+    quiz: number;
+    songs: number;
+    videos: number;
+    lastReset: string;
+  };
 }
 
 export interface WithdrawalRequest {
