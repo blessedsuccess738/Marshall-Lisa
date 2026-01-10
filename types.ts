@@ -1,7 +1,7 @@
 
 export enum MembershipTier {
   NONE = 'NONE',
-  PINCK = 'PINCK', // Free starter
+  PINCK = 'PINCK',
   LEGACY = 'LEGACY',
   KING = 'KING',
   EMPEROR = 'EMPEROR'
@@ -31,6 +31,23 @@ export interface Transaction {
   status: 'SUCCESS' | 'PENDING' | 'FAILED';
 }
 
+export interface Song {
+  id: string;
+  title: string;
+  artist: string;
+  url: string;
+  duration: string;
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  reward: number;
+  section: string;
+}
+
 export interface User {
   id: string;
   fullName: string;
@@ -48,6 +65,11 @@ export interface User {
   avatarUrl?: string;
   createdAt: string;
   transactions: Transaction[];
+  miningState: {
+    lastStartedAt: string | null;
+    isClaimable: boolean;
+  };
+  dailySpinClaimed: boolean;
   dailyEarnings: {
     quiz: number;
     songs: number;
@@ -72,4 +94,6 @@ export interface SystemSettings {
   withdrawalOpen: boolean;
   withdrawalMessage: string;
   announcement: string;
+  songs: Song[];
+  quizQuestions: QuizQuestion[];
 }

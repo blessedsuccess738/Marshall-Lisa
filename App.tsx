@@ -12,7 +12,7 @@ import WalletPage from './pages/WalletPage';
 import SettingsPage from './pages/SettingsPage';
 import TeamPage from './pages/TeamPage';
 import WithdrawalPage from './pages/WithdrawalPage';
-import { User, MembershipTier, WithdrawalRequest, SystemSettings } from './types';
+import { User, MembershipTier, WithdrawalRequest, SystemSettings, Song, QuizQuestion } from './types';
 import { ADMIN_EMAIL } from './constants';
 
 const App: React.FC = () => {
@@ -22,7 +22,24 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<SystemSettings>({
     withdrawalOpen: true,
     withdrawalMessage: "Withdrawals are open 24/7. Requests are processed within 15 minutes.",
-    announcement: "Welcome to RoyalGate! Mining rewards have been boosted for all Emperor tiers."
+    announcement: "Welcome to RoyalGate! Mining rewards have been boosted for all Emperor tiers.",
+    songs: [
+      { id: '1', title: 'City Boys', artist: 'Burna Boy', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', duration: '3:20' },
+      { id: '2', title: 'Last Last', artist: 'Burna Boy', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', duration: '2:50' },
+      { id: '3', title: 'Alone', artist: 'Fola', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', duration: '3:15' },
+      { id: '4', title: 'Lucid Dreams', artist: 'Juice WRLD', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', duration: '4:00' },
+      { id: '5', title: 'Higher', artist: 'Tems', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', duration: '3:15' },
+      { id: '6', title: 'Just Wanna Rock', artist: 'Lil Uzi Vert', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3', duration: '2:00' },
+      { id: '7', title: 'Ransom', artist: 'Lil Tecca', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3', duration: '3:30' },
+      { id: '8', title: 'Me & U', artist: 'Tems', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3', duration: '3:02' },
+      { id: '9', title: 'Wishing Well', artist: 'Juice WRLD', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3', duration: '3:12' },
+      { id: '10', title: '500lbs', artist: 'Lil Tecca', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3', duration: '2:55' }
+    ],
+    quizQuestions: [
+      { id: 'q1', section: 'Crypto', question: 'What is the smallest unit of Bitcoin?', options: ['Satoshi', 'Wei', 'Gwei', 'Bit'], correctAnswer: 'Satoshi', reward: 500 },
+      { id: 'q2', section: 'Tech', question: 'Which company created the iPhone?', options: ['Google', 'Samsung', 'Apple', 'Nokia'], correctAnswer: 'Apple', reward: 500 },
+      { id: 'q3', section: 'Nigeria', question: 'What is the capital city of Nigeria?', options: ['Lagos', 'Abuja', 'Kano', 'Enugu'], correctAnswer: 'Abuja', reward: 500 }
+    ]
   });
   const [loading, setLoading] = useState(true);
 
@@ -55,8 +72,7 @@ const App: React.FC = () => {
   const login = (user: User) => {
     setCurrentUser(user);
     localStorage.setItem('royalgate_user', JSON.stringify(user));
-    // If user doesn't exist in global list, add them
-    if (!users.find(u => u.email === user.email)) {
+    if (!users.find(u => u.id === user.id)) {
       setUsers(prev => [...prev, user]);
     }
   };

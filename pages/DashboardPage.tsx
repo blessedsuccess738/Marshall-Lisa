@@ -1,8 +1,16 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { User, MembershipTier, Transaction, Currency, SystemSettings } from '../types';
+import { User, MembershipTier, Transaction, Currency, SystemSettings, Song, QuizQuestion } from '../types';
 import { PACKAGES, NGN_TO_USD } from '../constants';
+
+const VIDEOS = [
+  { id: 1, title: 'Marvel: Secret Wars Trailer', views: '2.4M Views' },
+  { id: 2, title: 'The Witcher: Season 4 Teaser', views: '1.1M Views' },
+  { id: 3, title: 'GTA VI: Official Trailer 1', views: '150M Views' },
+  { id: 4, title: 'Dune: Part Two - Final Trailer', views: '900K Views' },
+  { id: 5, title: 'Interstellar: 10th Anniversary', views: '4.2M Views' }
+];
 
 interface DashboardPageProps {
   user: User;
@@ -16,83 +24,188 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, settings, onLogout,
   const location = useLocation();
   const [currency, setCurrency] = useState<Currency>('NGN');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'HOME' | 'QUIZ' | 'MUSIC' | 'MOVIES'>('HOME');
-  const [mining, setMining] = useState(false);
+  const [activeTab, setActiveTab] = useState<'HOME' | 'TASKS' | 'WALLET' | 'TEAM' | 'PROFILE'>('HOME');
+  const [taskSubTab, setTaskSubTab] = useState<'MUSIC' | 'QUIZ' | 'MOVIES'>('MUSIC');
+  
+  // Mining Logic
+  const [miningTimeLeft, setMiningTimeLeft] = useState<number | null>(null);
 
-  // Playback States
-  const [activeMedia, setActiveMedia] = useState<{ id: number; type: 'song' | 'video'; progress: number } | null>(null);
+  // Spin Wheel Logic
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [spinResult, setSpinResult] = useState<number | null>(null);
+
+  // Audio Playback
+  const [activeMedia, setActiveMedia] = useState<{ id: string; type: 'song' | 'video'; progress: number; currentTime: number } | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const progressInterval = useRef<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Quiz States
+  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
+  const quizSections = Array.from(new Set(settings.quizQuestions.map(q => q.section)));
+  const [activeQuizSection, setActiveQuizSection] = useState(quizSections[0] || 'General');
 
   const pkg = PACKAGES[user.tier];
   const isFree = user.tier === MembershipTier.PINCK;
   const isHome = location.pathname === '/dashboard' || location.pathname === '/dashboard/';
+  const sectionQuestions = settings.quizQuestions.filter(q => q.section === activeQuizSection);
 
-  // Persistence: Restore saved progress on mount
+  // Sync activeTab with location
   useEffect(() => {
-    const saved = localStorage.getItem(`royalgate_progress_${user.id}`);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // We don't auto-start, but we keep the state ready
-      setActiveMedia(parsed);
-    }
-  }, [user.id]);
+    if (location.pathname.includes('wallet')) setActiveTab('WALLET');
+    else if (location.pathname.includes('withdraw')) setActiveTab('WALLET');
+    else if (location.pathname.includes('team')) setActiveTab('TEAM');
+    else if (location.pathname.includes('settings')) setActiveTab('PROFILE');
+    else if (isHome) setActiveTab('HOME');
+  }, [location.pathname, isHome]);
 
-  // Save progress on change
+  // Mining Timer Effect
   useEffect(() => {
-    if (activeMedia) {
-      localStorage.setItem(`royalgate_progress_${user.id}`, JSON.stringify(activeMedia));
-    }
-  }, [activeMedia, user.id]);
+    let interval: number;
+    if (user.miningState.lastStartedAt) {
+      const startTime = new Date(user.miningState.lastStartedAt).getTime();
+      const endTime = startTime + (24 * 60 * 60 * 1000); 
 
-  // Handle Playback Logic
-  const startPlayback = (id: number, type: 'song' | 'video') => {
-    if (isFree) {
-      setShowUpgradeModal(true);
+      interval = window.setInterval(() => {
+        const now = Date.now();
+        const diff = endTime - now;
+
+        if (diff <= 0) {
+          if (!user.miningState.isClaimable) {
+            onUpdateUser({ ...user, miningState: { ...user.miningState, isClaimable: true } });
+          }
+          setMiningTimeLeft(0);
+          clearInterval(interval);
+        } else {
+          setMiningTimeLeft(diff);
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [user.miningState.lastStartedAt, user.miningState.isClaimable]);
+
+  const startMining = () => {
+    if (isFree) return setShowUpgradeModal(true);
+    onUpdateUser({
+      ...user,
+      miningState: { lastStartedAt: new Date().toISOString(), isClaimable: false }
+    });
+  };
+
+  const claimMining = () => {
+    const claimAmount = 2000;
+    handleEarning(claimAmount, 'mining', 'Daily Mining Claim Reward');
+    onUpdateUser({
+      ...user,
+      balance: user.balance + claimAmount,
+      miningState: { lastStartedAt: null, isClaimable: false }
+    });
+    setMiningTimeLeft(null);
+    alert(`Success! ₦${claimAmount.toLocaleString()} added to your balance.`);
+  };
+
+  const handleSpin = () => {
+    if (isFree) return setShowUpgradeModal(true);
+    if (user.dailySpinClaimed) {
+      alert("You have already claimed your daily spin!");
       return;
     }
+    setIsSpinning(true);
+    setTimeout(() => {
+      const outcomes = [100, 200, 500, 1000, 2000, 5000];
+      const result = outcomes[Math.floor(Math.random() * outcomes.length)];
+      setSpinResult(result);
+      setIsSpinning(false);
+      handleEarning(result, 'mining', `Daily Lucky Spin Winner: ₦${result}`);
+      onUpdateUser({ ...user, balance: user.balance + result, dailySpinClaimed: true });
+      alert(`🎉 Congratulations! You won ₦${result.toLocaleString()}`);
+    }, 3000);
+  };
 
-    // If switching media, reset progress unless it's the same one
-    if (activeMedia?.id === id && activeMedia?.type === type) {
-      setIsPlaying(!isPlaying);
-    } else {
-      setActiveMedia({ id, type, progress: 0 });
+  const formatTime = (ms: number) => {
+    const h = Math.floor(ms / (1000 * 60 * 60));
+    const m = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((ms % (1000 * 60)) / 1000);
+    return `${h}h ${m}m ${s}s`;
+  };
+
+  // Audio Logic
+  useEffect(() => {
+    if (activeMedia?.type === 'song') {
+      const song = settings.songs.find(s => s.id === activeMedia.id);
+      if (song) {
+        if (!audioRef.current) audioRef.current = new Audio(song.url);
+        else if (audioRef.current.src !== song.url) audioRef.current.src = song.url;
+
+        audioRef.current.currentTime = activeMedia.currentTime || 0;
+
+        const handleTimeUpdate = () => {
+          if (audioRef.current) {
+            const progress = (audioRef.current.currentTime / audioRef.current.duration) * 100;
+            setActiveMedia(prev => prev ? { ...prev, progress, currentTime: audioRef.current!.currentTime } : null);
+          }
+        };
+
+        const handleEnded = () => {
+          handleCompletion(activeMedia.id, 'song');
+          setIsPlaying(false);
+        };
+
+        audioRef.current.addEventListener('timeupdate', handleTimeUpdate);
+        audioRef.current.addEventListener('ended', handleEnded);
+
+        if (isPlaying) audioRef.current.play().catch(() => {});
+        else audioRef.current.pause();
+
+        return () => {
+          if (audioRef.current) {
+            audioRef.current.removeEventListener('timeupdate', handleTimeUpdate);
+            audioRef.current.removeEventListener('ended', handleEnded);
+          }
+        };
+      }
+    } else if (audioRef.current) audioRef.current.pause();
+  }, [activeMedia?.id, isPlaying, settings.songs]);
+
+  const startPlayback = (id: string, type: 'song' | 'video') => {
+    if (isFree) return setShowUpgradeModal(true);
+    if (activeMedia?.id === id && activeMedia?.type === type) setIsPlaying(!isPlaying);
+    else {
+      setActiveMedia({ id, type, progress: 0, currentTime: 0 });
       setIsPlaying(true);
     }
   };
 
-  useEffect(() => {
-    if (isPlaying && activeMedia) {
-      progressInterval.current = window.setInterval(() => {
-        setActiveMedia(prev => {
-          if (!prev) return null;
-          const nextProgress = prev.progress + 2; // Increment by 2% every second for demo speed (50s total)
-          
-          if (nextProgress >= 100) {
-            handleCompletion(prev.id, prev.type);
-            setIsPlaying(false);
-            if (progressInterval.current) clearInterval(progressInterval.current);
-            return { ...prev, progress: 100 };
-          }
-          return { ...prev, progress: nextProgress };
-        });
-      }, 1000);
-    } else {
-      if (progressInterval.current) clearInterval(progressInterval.current);
-    }
-
-    return () => {
-      if (progressInterval.current) clearInterval(progressInterval.current);
-    };
-  }, [isPlaying, activeMedia]);
-
-  const handleCompletion = (id: number, type: 'song' | 'video') => {
+  const handleCompletion = (id: string, type: 'song' | 'video') => {
     const amount = type === 'song' ? pkg.songRate : pkg.videoRate;
-    const category = type === 'song' ? 'songs' : 'videos';
-    const label = type === 'song' ? 'Stream Completion' : 'Movie Completion';
-
-    handleEarning(amount, category, `${label} Reward (#${id})`);
+    handleEarning(amount, type === 'song' ? 'songs' : 'videos', `${type === 'song' ? 'Stream' : 'Movie'} Reward`);
     setActiveMedia(null);
+  };
+
+  const handleQuizAnswer = (selected: string) => {
+    if (isFree) return setShowUpgradeModal(true);
+    const question = sectionQuestions[currentQuizIndex];
+    if (selected === question.correctAnswer) {
+      handleEarning(question.reward, 'quiz', `Quiz Correct: ${question.question}`);
+      alert(`Correct! +₦${question.reward}`);
+    } else {
+      const penalty = question.reward;
+      const penaltyTx: Transaction = {
+        id: Math.random().toString(36).substr(2, 9),
+        amount: penalty, type: 'DEBIT', description: `Quiz Penalty: Wrong answer`,
+        timestamp: new Date().toISOString(), status: 'SUCCESS'
+      };
+      onUpdateUser({
+        ...user,
+        balance: Math.max(0, user.balance - penalty),
+        transactions: [penaltyTx, ...user.transactions]
+      });
+      alert(`Wrong answer! -₦${penalty} deducted.`);
+    }
+    if (currentQuizIndex < sectionQuestions.length - 1) setCurrentQuizIndex(prev => prev + 1);
+    else {
+      alert("Section complete!");
+      setCurrentQuizIndex(0);
+    }
   };
 
   const formatVal = (val: number) => {
@@ -101,342 +214,233 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, settings, onLogout,
   };
 
   const handleEarning = (amount: number, type: 'quiz' | 'songs' | 'videos' | 'mining', desc: string) => {
-    if (isFree) {
-      setShowUpgradeModal(true);
-      return;
-    }
-
-    if (type === 'songs' && user.dailyEarnings.songs >= pkg.songLimit) {
-      alert(`Daily limit of ${pkg.songLimit} songs reached for your tier!`);
-      return;
-    }
-    if (type === 'videos' && user.dailyEarnings.videos >= pkg.videoLimit) {
-      alert(`Daily limit of ${pkg.videoLimit} videos reached for your tier!`);
-      return;
-    }
-
     const newTx: Transaction = {
       id: Math.random().toString(36).substr(2, 9),
-      amount,
-      type: 'CREDIT',
-      description: desc,
-      timestamp: new Date().toISOString(),
-      status: 'SUCCESS'
+      amount, type: 'CREDIT', description: desc,
+      timestamp: new Date().toISOString(), status: 'SUCCESS'
     };
-
     onUpdateUser({
       ...user,
       balance: user.balance + amount,
       transactions: [newTx, ...user.transactions],
-      dailyEarnings: {
-        ...user.dailyEarnings,
-        [type]: user.dailyEarnings[type as keyof typeof user.dailyEarnings] + (type === 'quiz' ? amount : 1)
-      }
+      dailyEarnings: { ...user.dailyEarnings, [type]: user.dailyEarnings[type as keyof typeof user.dailyEarnings] + (type === 'quiz' ? 0 : 1) }
     });
   };
 
-  const ARTISTS = [
-    { name: 'Burna Boy', songs: ['City Boys', 'Last Last', 'Tested, Approved', 'It\'s Plenty', 'Giza'] },
-    { name: 'Fola', songs: ['Alone', 'Better Days', 'Focus', 'Vibe', 'Tonight'] },
-    { name: 'Lil Uzi Vert', songs: ['Just Wanna Rock', 'XO Tour Llif3', 'Money Longer', '20 Min', 'P2'] },
-    { name: 'Juice WRLD', songs: ['Lucid Dreams', 'All Girls Are Same', 'Robbery', 'Wishing Well', 'Legends'] },
-    { name: 'Lil Tecca', songs: ['Ransom', '500lbs', 'Lot of Me', 'Never Left', 'Diva'] }
-  ];
-
-  const SONGS = Array.from({ length: 50 }, (_, i) => {
-    const artistIdx = Math.floor(i / 10) % ARTISTS.length;
-    const songIdx = i % 5;
-    return {
-      id: i + 1,
-      title: ARTISTS[artistIdx].songs[songIdx] || `Premium Track #${i + 1}`,
-      artist: ARTISTS[artistIdx].name,
-      duration: '03:45'
-    };
-  });
-
-  const VIDEOS = Array.from({ length: 50 }, (_, i) => ({
-    id: i + 1,
-    title: `Exclusive Movie Clip #${i + 1}`,
-    views: `${(Math.random() * 100).toFixed(1)}k views`
-  }));
-
-  const navItems = [
-    { label: 'Overview', path: '/dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-    { label: 'Activation', path: '/dashboard/wallet', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
-    { label: 'Withdraw', path: '/dashboard/withdraw', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-    { label: 'My Team', path: '/dashboard/team', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
-    { label: 'Settings', path: '/dashboard/settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
-  ];
-
   return (
-    <div className="min-h-screen bg-[#0f172a] text-slate-200 flex flex-col md:flex-row overflow-hidden">
-      {/* Sidebar */}
-      <div className="w-full md:w-64 glass-card md:h-screen sticky top-0 z-50 flex md:flex-col p-4 md:p-6 border-slate-800">
-        <div className="text-2xl font-black text-blue-500 mb-10 hidden md:flex items-center">
-           RG RoyalGate
+    <div className="min-h-screen bg-[#0f172a] text-slate-200 flex flex-col pb-24 font-sans">
+      {/* Top Header */}
+      <div className="p-6 flex justify-between items-center sticky top-0 z-40 bg-[#0f172a]/80 backdrop-blur-xl">
+        <div className="flex items-center gap-3">
+           <img src={user.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`} className="h-10 w-10 rounded-full border border-blue-500/20" alt="av" />
+           <div>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Welcome,</p>
+              <h1 className="text-sm font-black text-white">{user.username} 👑</h1>
+           </div>
         </div>
-        <nav className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-2 w-full overflow-x-auto no-scrollbar">
-          {navItems.map((item) => (
-            <Link key={item.path} to={item.path} className={`flex items-center px-4 py-3 rounded-2xl transition-all font-bold text-sm shrink-0 md:w-full ${location.pathname === item.path ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
-              <svg className="h-5 w-5 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={item.icon}></path></svg>
-              <span className="hidden md:inline">{item.label}</span>
-            </Link>
-          ))}
-          {user.isAdmin && (
-            <Link to="/admin" className="flex items-center px-4 py-3 rounded-2xl transition-all font-bold text-sm bg-purple-600/20 text-purple-400 hover:bg-purple-600 hover:text-white shrink-0 md:w-full">
-              <svg className="h-5 w-5 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-              <span className="hidden md:inline">Admin Panel</span>
-            </Link>
-          )}
-        </nav>
-        <div className="mt-auto hidden md:block pt-6 border-t border-slate-800">
-          <button onClick={() => window.open('https://t.me/royalgate_support', '_blank')} className="w-full flex items-center px-4 py-3 text-blue-400 font-bold hover:bg-blue-500/10 rounded-2xl transition mb-2">
-             Support
-          </button>
-          <button onClick={onLogout} className="w-full flex items-center px-4 py-3 text-red-400 font-bold hover:bg-red-500/10 rounded-2xl transition">
-             Logout
-          </button>
+        <div className="flex gap-2">
+           <button onClick={() => setCurrency('NGN')} className={`px-2 py-1 text-[8px] font-black rounded ${currency === 'NGN' ? 'bg-blue-600' : 'bg-slate-800'}`}>NGN</button>
+           <button onClick={() => setCurrency('USD')} className={`px-2 py-1 text-[8px] font-black rounded ${currency === 'USD' ? 'bg-blue-600' : 'bg-slate-800'}`}>USD</button>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 p-4 md:p-10 lg:p-14 overflow-y-auto no-scrollbar bg-[#0b1222]">
-        {settings.announcement && (
-          <div className="mb-8 p-4 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex items-center gap-4">
-             <span className="text-xl">📢</span>
-             <p className="text-sm font-medium text-blue-400">{settings.announcement}</p>
+      <div className="flex-1 p-6 overflow-y-auto no-scrollbar max-w-2xl mx-auto w-full">
+        {activeTab === 'HOME' && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+             {/* Main Balance Card */}
+             <div className="glass-card p-10 rounded-[3rem] bg-gradient-to-br from-blue-600 to-indigo-900 border-none shadow-2xl shadow-blue-500/20 text-center relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-10 text-8xl">👑</div>
+                <p className="text-blue-200 text-[10px] font-black uppercase tracking-widest mb-2">Total Balance Available</p>
+                <h2 className="text-5xl font-black text-white tracking-tighter mb-8">{formatVal(user.balance)}</h2>
+                <div className="flex gap-3 justify-center">
+                   <Link to="/dashboard/wallet" className="px-6 py-3 bg-white text-blue-900 rounded-2xl font-black text-xs">Activation</Link>
+                   <Link to="/dashboard/withdraw" className="px-6 py-3 bg-blue-500/30 backdrop-blur-md text-white border border-white/20 rounded-2xl font-black text-xs">Withdraw 🏦</Link>
+                </div>
+             </div>
+
+             {/* Quick Stats Grid */}
+             <div className="grid grid-cols-2 gap-4">
+                <div className="glass-card p-5 rounded-3xl border border-slate-800">
+                   <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Referrals</p>
+                   <p className="text-xl font-black text-white">{user.referrals.length} <span className="text-[10px] text-emerald-500">Active</span></p>
+                </div>
+                <div className="glass-card p-5 rounded-3xl border border-slate-800">
+                   <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Current Tier</p>
+                   <p className="text-xl font-black text-blue-500">{user.tier}</p>
+                </div>
+             </div>
+
+             {/* Spin Wheel Card */}
+             <div className="glass-card p-8 rounded-[3rem] border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-transparent text-center">
+                <h3 className="text-xl font-black text-amber-500 mb-2">Daily Lucky Spin 🎡</h3>
+                <p className="text-slate-500 text-xs mb-6">Win up to ₦5,000 every single day!</p>
+                
+                {user.dailySpinClaimed ? (
+                  <div className="py-6 px-10 bg-slate-900/50 rounded-2xl border border-slate-800">
+                     <p className="text-slate-500 font-bold italic text-sm">Next spin available in 24hrs.</p>
+                  </div>
+                ) : (
+                  <button 
+                    disabled={isSpinning}
+                    onClick={handleSpin}
+                    className={`w-full py-5 rounded-[2rem] font-black text-white shadow-xl transition-all ${isSpinning ? 'bg-slate-800' : 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/20'}`}
+                  >
+                    {isSpinning ? '🎡 SPINNING...' : 'SPIN NOW'}
+                  </button>
+                )}
+             </div>
+
+             {/* Mining Card */}
+             <div className="glass-card p-8 rounded-[3rem] border border-slate-800 relative overflow-hidden">
+                <h3 className="text-xl font-black mb-1">Core Mining Node ⚡</h3>
+                <p className="text-slate-500 text-xs mb-6">Claim your ₦2,000 block reward.</p>
+                
+                {user.miningState.isClaimable ? (
+                  <button onClick={claimMining} className="w-full py-5 bg-emerald-600 rounded-[2.5rem] font-black text-white animate-pulse">
+                     Claim ₦2,000 Reward 💰
+                  </button>
+                ) : user.miningState.lastStartedAt ? (
+                  <div className="text-center space-y-4">
+                     <p className="text-3xl font-black text-white font-mono tracking-widest">{formatTime(miningTimeLeft || 0)}</p>
+                     <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                        <div className="bg-blue-600 h-full transition-all duration-1000" style={{width: `${100 - ((miningTimeLeft || 0) / (24 * 60 * 60 * 10))}%`}}></div>
+                     </div>
+                     <p className="text-[10px] text-slate-600 font-bold uppercase">Mining in progress...</p>
+                  </div>
+                ) : (
+                  <button onClick={startMining} className="w-full py-5 bg-blue-600 rounded-[2.5rem] font-black text-white">
+                     Start Mining Sequence
+                  </button>
+                )}
+             </div>
           </div>
         )}
 
-        <div className="flex justify-between items-center mb-10">
-           <div className="flex items-center gap-4">
-              <img src={user.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`} className="h-14 w-14 rounded-2xl bg-slate-800 border-2 border-blue-600/20" alt="avatar" />
-              <div>
-                 <h1 className="text-xl font-black text-white">Welcome, {user.username}!</h1>
-                 <p className="text-slate-500 text-sm font-bold uppercase">{user.tier} Tier</p>
-              </div>
-           </div>
-           
-           <div className="flex items-center gap-3">
-              <div className="bg-slate-800/50 p-1 rounded-xl border border-slate-700 flex">
-                 <button onClick={() => setCurrency('NGN')} className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition ${currency === 'NGN' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>NGN</button>
-                 <button onClick={() => setCurrency('USD')} className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition ${currency === 'USD' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>USD</button>
-              </div>
-           </div>
-        </div>
+        {activeTab === 'TASKS' && (
+          <div className="space-y-6 animate-in slide-in-from-bottom-4">
+             <div className="flex bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
+                {['MUSIC', 'QUIZ', 'MOVIES'].map(t => (
+                  <button key={t} onClick={() => setTaskSubTab(t as any)} className={`flex-1 py-3 text-[10px] font-black rounded-xl transition ${taskSubTab === t ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>{t}</button>
+                ))}
+             </div>
 
-        {isHome ? (
-          <div className="max-w-6xl mx-auto space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div className="glass-card p-10 rounded-[3rem] bg-gradient-to-br from-blue-600/10 to-transparent border border-blue-500/10">
-                  <p className="text-slate-500 text-[10px] font-black uppercase mb-2 tracking-widest">Available Balance</p>
-                  <p className="text-5xl font-black text-white mb-6">{formatVal(user.balance)}</p>
-                  <div className="flex gap-4">
-                    <Link to="/dashboard/wallet" className="px-8 py-3 bg-blue-600 rounded-2xl font-black text-sm text-white hover:bg-blue-500 transition">Activation Hub</Link>
-                    <Link to="/dashboard/withdraw" className="px-8 py-3 bg-slate-800 rounded-2xl font-black text-sm text-white hover:bg-slate-700 transition">Withdraw</Link>
-                  </div>
-               </div>
-               <div className="glass-card p-10 rounded-[3rem] border border-slate-800 flex flex-col justify-center">
-                  <p className="text-slate-500 text-[10px] font-black uppercase mb-1 tracking-widest">Daily Limit Status</p>
-                  <div className="space-y-3 mt-4">
-                     <div className="flex justify-between text-sm"><span className="text-slate-400">Songs Played</span><span className="font-bold">{user.dailyEarnings.songs}/{pkg.songLimit}</span></div>
-                     <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden"><div className="bg-blue-600 h-full transition-all duration-500" style={{width: `${(user.dailyEarnings.songs/pkg.songLimit)*100}%`}}></div></div>
-                     <div className="flex justify-between text-sm"><span className="text-slate-400">Videos Watched</span><span className="font-bold">{user.dailyEarnings.videos}/{pkg.videoLimit}</span></div>
-                     <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden"><div className="bg-purple-600 h-full transition-all duration-500" style={{width: `${(user.dailyEarnings.videos/pkg.videoLimit)*100}%`}}></div></div>
-                  </div>
-               </div>
-            </div>
-
-            <div className="flex space-x-2 border-b border-slate-800 pb-2">
-               {['HOME', 'QUIZ', 'MUSIC', 'MOVIES'].map(t => (
-                 <button key={t} onClick={() => setActiveTab(t as any)} className={`px-6 py-2 text-xs font-black transition ${activeTab === t ? 'text-blue-500 border-b-2 border-blue-500' : 'text-slate-500'}`}>{t}</button>
-               ))}
-            </div>
-
-            {activeTab === 'HOME' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                 <div className="glass-card p-10 rounded-[3rem] border border-slate-800 relative overflow-hidden group">
-                    <h3 className="text-2xl font-black mb-3">Core Node Miner</h3>
-                    <p className="text-slate-500 text-sm mb-10">Run the sequence to extract daily blocks.</p>
-                    <div className="h-32 flex items-center justify-center bg-slate-900/50 rounded-3xl border border-slate-800 mb-8 overflow-hidden">
-                       {mining ? (
-                         <div className="flex gap-1">
-                            {[1, 2, 3, 4, 5].map(i => <div key={i} className="w-3 bg-blue-600 animate-bounce" style={{animationDelay: `${i*0.1}s`}}></div>)}
-                         </div>
-                       ) : <div className="text-slate-800 font-black text-5xl italic group-hover:text-blue-500/5 transition">STANDBY</div>}
-                    </div>
-                    <button 
-                      onClick={() => {
-                        if (isFree) return setShowUpgradeModal(true);
-                        setMining(true);
-                        setTimeout(() => {
-                           handleEarning(pkg.dailyRate, 'mining', 'Daily Node Mining');
-                           setMining(false);
-                           alert('Mining Complete!');
-                        }, 2500);
-                      }}
-                      disabled={mining}
-                      className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[2rem] font-black text-white shadow-xl shadow-blue-500/20 active:scale-[0.98] transition"
-                    >
-                      {mining ? 'Hashing Blocks...' : 'Start Mining'}
-                    </button>
-                 </div>
-                 
-                 <div className="glass-card p-10 rounded-[3rem] border border-slate-800">
-                    <h3 className="text-2xl font-black mb-6">Activity Feed</h3>
-                    <div className="space-y-4">
-                       {user.transactions.slice(0, 5).map(tx => (
-                         <div key={tx.id} className="p-4 bg-slate-900/50 border border-slate-800 rounded-2xl flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                               <div className={`p-2 rounded-lg ${tx.type === 'CREDIT' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                  {tx.type === 'CREDIT' ? '↓' : '↑'}
-                               </div>
-                               <div>
-                                  <p className="text-xs font-bold text-white">{tx.description}</p>
-                                  <p className="text-[10px] text-slate-500">{new Date(tx.timestamp).toLocaleTimeString()}</p>
-                               </div>
-                            </div>
-                            <span className={`text-xs font-black ${tx.type === 'CREDIT' ? 'text-emerald-500' : 'text-slate-400'}`}>
-                               {tx.type === 'CREDIT' ? '+' : '-'}{formatVal(tx.amount)}
-                            </span>
-                         </div>
-                       ))}
-                       {user.transactions.length === 0 && <p className="text-center text-slate-500 py-10 italic">No activity yet.</p>}
-                    </div>
-                 </div>
-              </div>
-            )}
-
-            {activeTab === 'QUIZ' && (
-              <div className="max-w-3xl mx-auto text-center space-y-8 bg-amber-500/5 border border-amber-500/10 p-12 rounded-[3.5rem] glass-card">
-                 <h2 className="text-4xl font-black text-amber-500">Royal Trivia</h2>
-                 <p className="text-slate-400 font-medium">Earn per correct answer.</p>
-                 <div className="p-10 bg-slate-900 rounded-[2.5rem] border border-slate-800 text-left">
-                    <p className="text-xl font-bold mb-8">What is the capital of crypto digital assets?</p>
-                    <div className="grid grid-cols-1 gap-4">
-                       {['Decentralization', 'MetaMask', 'Binance', 'RoyalGate'].map(opt => (
-                         <button key={opt} onClick={() => handleEarning(450, 'quiz', 'Quiz Reward')} className="w-full py-4 px-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl text-left font-bold transition">
-                            {opt}
-                         </button>
-                       ))}
-                    </div>
-                 </div>
-              </div>
-            )}
-
-            {activeTab === 'MUSIC' && (
-              <div className="space-y-6">
-                 <div className="flex justify-between items-end">
-                    <h2 className="text-3xl font-black text-emerald-500">Music Marketplace</h2>
-                    <p className="text-slate-500 text-sm font-bold italic">Earnings added ONLY on completion</p>
-                 </div>
-                 {/* Single Line Listing (Vertical) */}
-                 <div className="space-y-3">
-                    {SONGS.map(song => {
-                      const isActive = activeMedia?.id === song.id && activeMedia?.type === 'song';
-                      return (
-                        <div key={song.id} className="p-4 glass-card rounded-2xl border border-slate-800 flex flex-col gap-2 group overflow-hidden">
-                           <div className="flex justify-between items-center w-full">
+             {taskSubTab === 'MUSIC' && (
+                <div className="space-y-3">
+                   {settings.songs.map(song => {
+                     const isActive = activeMedia?.id === song.id && activeMedia?.type === 'song';
+                     return (
+                       <div key={song.id} className="p-4 bg-slate-900/50 border border-slate-800 rounded-2xl flex flex-col gap-3">
+                          <div className="flex items-center justify-between">
                              <div className="flex items-center gap-4">
-                                <button 
-                                  onClick={() => startPlayback(song.id, 'song')}
-                                  className={`h-12 w-12 rounded-xl flex items-center justify-center font-black transition ${isActive && isPlaying ? 'bg-red-500 text-white' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white'}`}
-                                >
+                                <button onClick={() => startPlayback(song.id, 'song')} className={`h-11 w-11 rounded-xl flex items-center justify-center text-lg transition ${isActive && isPlaying ? 'bg-red-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
                                    {isActive && isPlaying ? '⏸' : '▶'}
                                 </button>
                                 <div>
                                    <p className="text-sm font-bold text-white">{song.title}</p>
-                                   <p className="text-[10px] text-slate-500 uppercase tracking-widest">{song.artist}</p>
+                                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{song.artist}</p>
                                 </div>
                              </div>
-                             <div className="text-right">
-                               <p className="text-[10px] text-slate-600 font-black">{song.duration}</p>
-                               <p className="text-xs font-black text-emerald-400">+{formatVal(pkg.songRate)}</p>
-                             </div>
-                           </div>
-                           
-                           {isActive && (
-                             <div className="w-full mt-2">
-                                <div className="flex justify-between text-[9px] font-black uppercase mb-1">
-                                  <span className="text-blue-400">Streaming Progress</span>
-                                  <span>{Math.floor(activeMedia.progress)}%</span>
-                                </div>
-                                <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                                   <div className="bg-emerald-500 h-full transition-all duration-300" style={{width: `${activeMedia.progress}%`}}></div>
-                                </div>
-                             </div>
-                           )}
-                        </div>
-                      );
-                    })}
-                 </div>
-              </div>
-            )}
+                             <p className="text-xs font-black text-emerald-500">+{formatVal(pkg.songRate)}</p>
+                          </div>
+                          {isActive && (
+                            <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+                               <div className="bg-emerald-500 h-full transition-all duration-300" style={{width: `${activeMedia.progress}%`}}></div>
+                            </div>
+                          )}
+                       </div>
+                     );
+                   })}
+                </div>
+             )}
 
-            {activeTab === 'MOVIES' && (
-              <div className="space-y-6">
-                 <div className="flex justify-between items-end">
-                    <h2 className="text-3xl font-black text-purple-500">Cinema Hub</h2>
-                    <p className="text-slate-500 text-sm font-bold italic">Earnings added ONLY on completion</p>
-                 </div>
-                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                    {VIDEOS.map(vid => {
-                      const isActive = activeMedia?.id === vid.id && activeMedia?.type === 'video';
-                      return (
-                        <div 
-                          key={vid.id} 
-                          className={`relative group rounded-3xl overflow-hidden border bg-slate-900 cursor-pointer aspect-[9/12] transition-all ${isActive ? 'ring-4 ring-purple-600 border-purple-600' : 'border-slate-800'}`} 
-                          onClick={() => startPlayback(vid.id, 'video')}
-                        >
-                           <img src={`https://picsum.photos/300/400?random=${vid.id + 200}`} className={`w-full h-full object-cover transition duration-700 ${isActive ? 'opacity-30' : 'opacity-60 group-hover:scale-110'}`} alt="thumb" />
-                           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent flex flex-col justify-end p-5">
-                              <p className="text-xs font-black text-white mb-1">{vid.title}</p>
-                              <p className="text-[9px] text-purple-400 font-bold uppercase">{vid.views}</p>
-                           </div>
-                           <div className="absolute inset-0 flex flex-col items-center justify-center">
-                              {isActive ? (
-                                <div className="w-full px-4 text-center">
-                                   <p className="text-[10px] font-black text-white mb-2 uppercase">{isPlaying ? 'WATCHING' : 'PAUSED'}</p>
-                                   <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                                      <div className="bg-purple-600 h-full" style={{width: `${activeMedia.progress}%`}}></div>
-                                   </div>
-                                   <p className="mt-2 text-[10px] font-bold text-purple-400">+{formatVal(pkg.videoRate)}</p>
-                                </div>
-                              ) : (
-                                <div className="h-12 w-12 bg-white/10 backdrop-blur rounded-full flex items-center justify-center border border-white/20 opacity-0 group-hover:opacity-100 transition">
-                                   <svg className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-                                </div>
-                              )}
-                           </div>
-                        </div>
-                      );
-                    })}
-                 </div>
-              </div>
-            )}
+             {taskSubTab === 'QUIZ' && (
+                <div className="space-y-8">
+                   <div className="text-center p-8 bg-amber-500/5 border border-amber-500/10 rounded-[2.5rem]">
+                      <h3 className="text-xl font-black text-amber-500 mb-1">High-Stakes Trivia 🏆</h3>
+                      <p className="text-[10px] text-red-500 font-bold uppercase italic">Penalty logic: Wrong answers deduct balance!</p>
+                   </div>
+                   {sectionQuestions.length > 0 ? (
+                      <div className="space-y-6">
+                         <div className="flex justify-between px-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                            <span>Question {currentQuizIndex+1}/{sectionQuestions.length}</span>
+                            <span className="text-emerald-500">₦{sectionQuestions[currentQuizIndex].reward} Reward</span>
+                         </div>
+                         <p className="text-xl font-bold text-white leading-tight px-2">{sectionQuestions[currentQuizIndex].question}</p>
+                         <div className="grid grid-cols-1 gap-3">
+                            {sectionQuestions[currentQuizIndex].options.map(opt => (
+                               <button key={opt} onClick={() => handleQuizAnswer(opt)} className="w-full py-4 px-6 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-2xl text-left font-bold transition">
+                                  {opt}
+                               </button>
+                            ))}
+                         </div>
+                      </div>
+                   ) : <p className="text-center text-slate-600 italic">No questions active.</p>}
+                </div>
+             )}
+
+             {taskSubTab === 'MOVIES' && (
+                <div className="grid grid-cols-2 gap-4">
+                   {VIDEOS.map(vid => (
+                      <div key={vid.id} className="relative aspect-[9/12] rounded-3xl overflow-hidden border border-slate-800 bg-slate-900 shadow-xl group" onClick={() => startPlayback(vid.id.toString(), 'video')}>
+                         <img src={`https://picsum.photos/300/400?random=${vid.id + 77}`} className="w-full h-full object-cover opacity-60 transition group-hover:scale-105" alt="v" />
+                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 p-4 flex flex-col justify-end">
+                            <p className="text-[10px] font-black text-white mb-1">{vid.title}</p>
+                            <p className="text-[9px] text-purple-400 font-bold uppercase tracking-widest">{vid.views}</p>
+                         </div>
+                         <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md h-7 w-7 rounded-full flex items-center justify-center text-[10px]">▶</div>
+                      </div>
+                   ))}
+                </div>
+             )}
           </div>
-        ) : <Outlet />}
+        )}
+
+        {/* Render nested routes for Wallet/Team/Settings */}
+        {['WALLET', 'TEAM', 'PROFILE'].includes(activeTab) && <Outlet />}
+      </div>
+
+      {/* Bottom Navigation Menu */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-transparent pointer-events-none">
+         <div className="max-w-md mx-auto glass-card rounded-[2.5rem] p-2 flex justify-around items-center border border-white/5 shadow-2xl pointer-events-auto">
+            <button onClick={() => { navigate('/dashboard'); setActiveTab('HOME'); }} className={`flex flex-col items-center p-3 rounded-2xl transition ${activeTab === 'HOME' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500'}`}>
+               <span className="text-xl">🏠</span>
+               <span className="text-[8px] font-black uppercase mt-1">Home</span>
+            </button>
+            <button onClick={() => { setActiveTab('TASKS'); }} className={`flex flex-col items-center p-3 rounded-2xl transition ${activeTab === 'TASKS' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500'}`}>
+               <span className="text-xl">🎵</span>
+               <span className="text-[8px] font-black uppercase mt-1">Tasks</span>
+            </button>
+            <button onClick={() => { navigate('/dashboard/withdraw'); setActiveTab('WALLET'); }} className={`flex flex-col items-center p-3 rounded-2xl transition ${activeTab === 'WALLET' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500'}`}>
+               <span className="text-xl">🏦</span>
+               <span className="text-[8px] font-black uppercase mt-1">Wallet</span>
+            </button>
+            <button onClick={() => { navigate('/dashboard/team'); setActiveTab('TEAM'); }} className={`flex flex-col items-center p-3 rounded-2xl transition ${activeTab === 'TEAM' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500'}`}>
+               <span className="text-xl">👥</span>
+               <span className="text-[8px] font-black uppercase mt-1">Team</span>
+            </button>
+            <button onClick={() => { navigate('/dashboard/settings'); setActiveTab('PROFILE'); }} className={`flex flex-col items-center p-3 rounded-2xl transition ${activeTab === 'PROFILE' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500'}`}>
+               <span className="text-xl">⚙️</span>
+               <span className="text-[8px] font-black uppercase mt-1">Profile</span>
+            </button>
+         </div>
       </div>
 
       {showUpgradeModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-2xl animate-in fade-in duration-300">
-           <div className="glass-card w-full max-w-xl p-10 rounded-[3.5rem] border border-blue-500/20 text-center relative">
-              <button onClick={() => setShowUpgradeModal(false)} className="absolute top-8 right-8 text-slate-500 hover:text-white transition">✕</button>
-              <h2 className="text-4xl font-black text-white mb-3 tracking-tight">Activation Required</h2>
-              <p className="text-slate-400 mb-10 font-medium">To unlock tasks and daily withdrawals, you need a premium package.</p>
-              
-              <div className="space-y-4 mb-10 text-left">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl animate-in fade-in">
+           <div className="glass-card w-full max-w-sm p-8 rounded-[3.5rem] border border-blue-500/20 text-center relative">
+              <button onClick={() => setShowUpgradeModal(false)} className="absolute top-6 right-6 text-slate-500">✕</button>
+              <h2 className="text-3xl font-black text-white mb-6">Upgrade Plan 👑</h2>
+              <div className="space-y-4">
                  {[MembershipTier.LEGACY, MembershipTier.KING, MembershipTier.EMPEROR].map(tier => (
-                    <div key={tier} className="p-6 bg-slate-900 border border-slate-800 rounded-3xl flex justify-between items-center group hover:border-blue-600 transition cursor-pointer" onClick={() => navigate('/dashboard/wallet')}>
-                       <div>
-                          <p className="text-[10px] font-black text-blue-500 uppercase">{PACKAGES[tier].name}</p>
-                          <p className="text-xl font-black text-white">₦{PACKAGES[tier].price.toLocaleString()}</p>
+                    <div key={tier} className="p-4 bg-slate-900 border border-slate-800 rounded-3xl flex justify-between items-center group transition cursor-pointer hover:border-blue-500" onClick={() => navigate('/dashboard/wallet')}>
+                       <div className="text-left">
+                          <p className="text-[9px] font-black text-blue-500 uppercase">{PACKAGES[tier].name}</p>
+                          <p className="text-sm font-black text-white">₦{PACKAGES[tier].price.toLocaleString()}</p>
                        </div>
-                       <div className="px-6 py-2 bg-blue-600 rounded-xl text-xs font-black text-white">Select</div>
+                       <span className="text-[10px] font-bold text-slate-500">Select Plan →</span>
                     </div>
                  ))}
               </div>
-              <button onClick={() => setShowUpgradeModal(false)} className="text-slate-500 font-bold hover:text-slate-300 transition underline underline-offset-4">Maybe Later</button>
            </div>
         </div>
       )}

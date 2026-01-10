@@ -16,6 +16,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const baseUserData = {
+      transactions: [],
+      miningState: { lastStartedAt: null, isClaimable: false },
+      dailySpinClaimed: false,
+      dailyEarnings: { quiz: 0, songs: 0, videos: 0, lastReset: new Date().toISOString() }
+    };
+
     if (email === ADMIN_EMAIL) {
       const adminUser: User = {
         id: 'admin-1',
@@ -31,13 +38,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         isActive: true,
         isAdmin: true,
         createdAt: new Date().toISOString(),
-        transactions: [],
-        dailyEarnings: {
-          quiz: 0,
-          songs: 0,
-          videos: 0,
-          lastReset: new Date().toISOString()
-        }
+        ...baseUserData
       };
       onLogin(adminUser);
       navigate('/admin');
@@ -46,8 +47,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
     const mockUser: User = {
       id: 'user-123',
-      fullName: 'John Doe',
-      username: 'johndoe',
+      fullName: 'Test Member',
+      username: 'testuser',
       email: email,
       phone: '1234567890',
       country: 'Nigeria',
@@ -58,13 +59,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       isActive: true,
       isAdmin: false,
       createdAt: new Date().toISOString(),
-      transactions: [],
-      dailyEarnings: {
-        quiz: 0,
-        songs: 0,
-        videos: 0,
-        lastReset: new Date().toISOString()
-      }
+      ...baseUserData
     };
     onLogin(mockUser);
     navigate('/dashboard');
@@ -81,41 +76,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <div className="glass-card py-10 px-8 rounded-[2.5rem] border border-slate-800 shadow-2xl">
           <form className="space-y-6" onSubmit={handleLogin}>
             <div>
-              <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-widest">Email Address</label>
-              <input
-                required
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="example@mail.com"
-                className="w-full px-5 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-200 focus:ring-1 focus:ring-blue-500 outline-none transition"
-              />
+              <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest">Email Address</label>
+              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-5 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-200 outline-none" />
               <p className="text-[10px] text-slate-600 mt-2 italic">Admin: {ADMIN_EMAIL}</p>
             </div>
-
             <div>
-              <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-widest">Password</label>
-              <input
-                required
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-5 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-200 focus:ring-1 focus:ring-blue-500 outline-none transition"
-              />
+              <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest">Password</label>
+              <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-5 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-200 outline-none" />
             </div>
-
-            <button
-              type="submit"
-              className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl transition transform active:scale-[0.98] shadow-xl shadow-blue-500/10 text-lg"
-            >
-              Sign In
-            </button>
+            <button type="submit" className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl text-lg">Sign In</button>
           </form>
-          
-          <p className="mt-10 text-center text-sm text-slate-500">
-            Don't have an account? <Link to="/register" className="text-blue-500 font-bold hover:underline">Register</Link>
-          </p>
+          <p className="mt-10 text-center text-sm text-slate-500">Don't have an account? <Link to="/register" className="text-blue-500 font-bold">Register</Link></p>
         </div>
       </div>
     </div>
